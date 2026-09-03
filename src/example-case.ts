@@ -369,8 +369,14 @@ export const EXAMPLE_EDGES: GraphEdge[] = [
   // Retrieval scope depends on data sources, not on write permissions.
   { kind: 'supports', sourceRef: 'E-098', targetRef: 'C-03', severedBy: ['data_source_added', 'retrieval_service'] },
   { kind: 'supports', sourceRef: 'E-081', targetRef: 'C-03', severedBy: ['data_source_added', 'guardrail_config'] },
-  // Injection resistance depends on the model, prompt and tool surface.
-  { kind: 'supports', sourceRef: 'E-087', targetRef: 'C-04', severedBy: ['model_version', 'system_prompt', 'tool_added'] },
+  // Injection resistance depends on the model, prompt and tool surface — and
+  // on *who serves the model*, which is a separate fact from which model it is.
+  // A challenge pack passed against one provider's serving of a model says
+  // little about another's: system-level filtering, safety scaffolding and
+  // quantisation differ between hosts. Without `model_provider` here, moving
+  // the same model identifier to a different provider invalidated nothing at
+  // all, which was a hole rather than a judgement.
+  { kind: 'supports', sourceRef: 'E-087', targetRef: 'C-04', severedBy: ['model_version', 'model_provider', 'model_artifact_digest', 'system_prompt', 'tool_added'] },
   // A contradictory result. Section 10.2: surviving support must not bury it.
   { kind: 'challenges', sourceRef: 'E-112', targetRef: 'C-04', severedBy: ['guardrail_config'] },
   { kind: 'supports', sourceRef: 'E-069', targetRef: 'C-05', severedBy: ['tool_added', 'guardrail_config'] },
@@ -386,7 +392,7 @@ export const EXAMPLE_EDGES: GraphEdge[] = [
   // injection-resistance evidence; an unsigned MCP server severs the tool
   // description evidence. Memory evidence survives both, which is the point.
   { kind: 'supports', sourceRef: 'E-121', targetRef: 'C-11', severedBy: ['data_source_added', 'index_content_source'] },
-  { kind: 'supports', sourceRef: 'E-124', targetRef: 'C-12', severedBy: ['data_source_added', 'index_content_source', 'model_version', 'system_prompt'] },
+  { kind: 'supports', sourceRef: 'E-124', targetRef: 'C-12', severedBy: ['data_source_added', 'index_content_source', 'model_version', 'model_provider', 'model_artifact_digest', 'system_prompt'] },
   { kind: 'supports', sourceRef: 'E-127', targetRef: 'C-13', severedBy: ['memory_write_policy', 'memory_config'] },
   { kind: 'supports', sourceRef: 'E-130', targetRef: 'C-14', severedBy: ['mcp_server_added', 'mcp_server_changed', 'tool_schema_changed'] },
   { kind: 'derives_from', sourceRef: 'C-12', targetRef: 'C-11', severedBy: [] },

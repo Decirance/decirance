@@ -53,11 +53,23 @@ const write = (path: string, value: unknown) => {
   console.log(`  ${path.replace(root, '.')}`);
 };
 
+/**
+ * Fixed so the published example is reproducible.
+ *
+ * `created_at` is inside the passport digest, so taking it from the clock made
+ * every regeneration emit a different hash for an identical configuration —
+ * noisy diffs, and a published digest nobody could reproduce. For a project
+ * whose premise is that a configuration has a stable content address, that was
+ * the wrong default in the one place it is most visible.
+ */
+const EXAMPLE_CREATED_AT = '2026-09-03T00:00:00.000Z';
+
 const passportDoc = serialisePassport(EXAMPLE_PASSPORT_V3, {
   agentId: 'agt_meridian_reply',
   agentVersion: '3.0.0',
   owner: EXAMPLE_AGENT.owner,
   purpose: 'Triage inbound casework and draft responses for human review.',
+  createdAt: EXAMPLE_CREATED_AT,
 });
 const contractDoc = serialiseContextContract(EXAMPLE_CONTEXT_CONTRACT, {
   contractId: 'ctx_meridian_casework',

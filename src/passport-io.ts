@@ -235,7 +235,20 @@ export function parsePassport(input: unknown): PassportParseResult {
 /** Render a snapshot back out as a wire-format document. */
 export function serialisePassport(
   snapshot: PassportSnapshot,
-  meta: { agentId: string; agentVersion: string; owner: string; purpose?: string },
+  meta: {
+    agentId: string;
+    agentVersion: string;
+    owner: string;
+    purpose?: string;
+    /**
+     * When the document was written. Defaults to now, but a caller producing
+     * a *published* document should pass a fixed value: `created_at` is inside
+     * the digest, so defaulting to the clock made regenerating the bundled
+     * examples change their hashes on every run, with no configuration
+     * difference behind it.
+     */
+    createdAt?: string;
+  },
 ): PassportDocument {
   return {
     schema_version: PASSPORT_SCHEMA_VERSION,
@@ -244,7 +257,7 @@ export function serialisePassport(
     owner: meta.owner,
     purpose: meta.purpose,
     environment: snapshot.deploymentEnvironment,
-    created_at: new Date().toISOString(),
+    created_at: meta.createdAt ?? new Date().toISOString(),
     components: {
       model: {
         provider: snapshot.modelProvider,

@@ -276,6 +276,8 @@
       "targetRef": "C-04",
       "severedBy": [
         "model_version",
+        "model_provider",
+        "model_artifact_digest",
         "system_prompt",
         "tool_added"
       ]
@@ -371,6 +373,8 @@
         "data_source_added",
         "index_content_source",
         "model_version",
+        "model_provider",
+        "model_artifact_digest",
         "system_prompt"
       ]
     },

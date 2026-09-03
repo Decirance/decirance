@@ -25,3 +25,14 @@ not much help.
 
 Content will be CC BY 4.0 rather than Apache 2.0, so it can be reused in
 training material and internal policy without the code licence applying.
+
+## Reviewing the weakest part
+
+[dependency-review.md](dependency-review.md) is a generated sheet listing every
+`severedBy` set — the change kinds that break each dependency between evidence
+and the claim it supports. Every invalidation result the tool produces rests on
+those sets, they are judgement calls, and they have not been externally
+reviewed. The sheet exists so that reviewing them does not require reading
+TypeScript. Disagreements are more useful than agreement.
+
+Regenerate with `npm run dependency-review`.

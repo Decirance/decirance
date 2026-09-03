@@ -45,7 +45,7 @@ are informative, values are not.
 | `examples/meridian-reply-agent/` | A complete, reproducible reference assessment |
 | `threat-library/` | Hazards and executable scenarios, mapped to NCSC guidance themes |
 | `framework-mappings/` | [NCSC mapping](framework-mappings/ncsc.md); others planned |
-| `docs/` | [Methodology](docs/methodology.md), [quickstart](docs/quickstart.md) |
+| `docs/` | [Methodology](docs/methodology.md), [quickstart](docs/quickstart.md), [dependency review sheet](docs/dependency-review.md) |
 
 ---
 
