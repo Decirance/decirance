@@ -19,12 +19,19 @@
     "deployment-permit"
   ],
   "exports": {
-    ".": "./src/index.ts"
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./schemas/*": "./schemas/*",
+    "./package.json": "./package.json"
   },
   "bin": {
     "decirance": "./cli/decirance.ts"
   },
   "files": [
+    "dist",
     "src",
     "cli",
     "schemas",
@@ -38,11 +45,15 @@
     "TRADEMARKS.md"
   ],
   "scripts": {
+    "build": "tsc -p tsconfig.build.json && tsx ./cli/fix-extensions.ts dist",
     "typecheck": "tsc --noEmit",
     "build:examples": "tsx ./cli/build-examples.ts",
     "scan": "tsx ./cli/decirance.ts scan",
+    "diff": "tsx ./cli/decirance.ts diff",
+    "verify": "tsx ./cli/verify.ts",
+    "validate": "tsx ./cli/validate.ts",
     "test": "tsx ./cli/verify.ts && tsx ./cli/validate.ts",
-    "validate": "tsx ./cli/validate.ts"
+    "prepublishOnly": "npm run typecheck && npm run test && npm run build"
   },
   "devDependencies": {
     "typescript": "~5.9.3",
@@ -51,5 +62,9 @@
   },
   "engines": {
     "node": ">=20.6"
-  }
+  },
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "sideEffects": false
 }
