@@ -48,6 +48,13 @@ import {
   CONTAINMENT_SEQUENCE,
   type EnforcementReceipt,
   type ContainmentRun,
+  checkProportionality,
+  assessCriticality,
+  checkDelegation,
+  checkToolAuthority,
+  findCompositionalRisks,
+  type AuthorityGrant,
+  type ToolAuthorityContract,
 } from '../src/index.ts';
 
 let failures = 0;
@@ -399,6 +406,120 @@ check('a failed step makes the whole run failed',
 check('detection-to-containment time is measured',
   (assessContainment(fullRun).elapsedMs ?? 0) > 0,
   'The research questions require containment latency as a measured quantity, not an assertion.');
+
+
+console.log('\nProportionality and criticality');
+
+check('assurance cannot begin before the deployment is justified',
+  !checkProportionality({ desiredOutcome: 'Draft replies faster' }).mayProceed,
+  'A process that starts from the agent existing can only answer "how safely", never "whether". By the time a case is built the second question has been decided by default.');
+
+const fullProposal = {
+  desiredOutcome: 'Reduce case reply time', affectedUsers: ['casework'],
+  expectedBenefit: '30% faster first response',
+  whyAgentIsNeeded: 'Free-text triage no rules engine handles',
+  nonAgentAlternative: 'Template macros; rejected, cannot read case history',
+  whyThisAutonomy: 'Drafting only; a human sends', owner: 'Head of Casework',
+  accountableSponsor: 'Director of Operations',
+};
+check('a fully justified proposal may proceed',
+  checkProportionality(fullProposal).mayProceed,
+  'The gate must be passable, or it is an obstacle rather than a check.');
+
+const modest = {
+  autonomy: 1, privilege: 1, dataSensitivity: 1, reversibility: 1, operationalReach: 1,
+  speed: 1, fanOut: 0, financialAuthority: 0, affectedPopulation: 0, consequenceOfFailure: 1,
+} as const;
+
+check('a modest deployment lands in a low tier',
+  ['T1_limited', 'T2_standard'].includes(assessCriticality(modest).tier),
+  'Proportionality means low-risk deployments must be able to attract low-tier requirements.');
+
+check('a safety consequence escalates regardless of an otherwise modest profile',
+  assessCriticality({ ...modest, consequenceOfFailure: 3 }).tier === 'T4_critical',
+  'A weighted sum would average a serious property away. An agent that can affect safety is not mid-tier because everything else about it is small.');
+
+check('unbounded spawning escalates on its own',
+  assessCriticality({ ...modest, fanOut: 3 }).escalatingFactors.some((e) => e.factor === 'fanOut'),
+  'Parallel instances multiply every other factor and defeat per-instance review. 17,600 actions is the same decision taken 17,600 times before anyone looked.');
+
+check('the tier is always accompanied by its contributing factors',
+  assessCriticality(modest).contributions.length === 10 && assessCriticality(modest).reasoning.length > 0,
+  'A bare tier is the unexplained aggregate this product argues against. A number that hides its derivation is a trust score wearing a different hat.');
+
+console.log('\nAuthority and delegation');
+
+const parentGrant: AuthorityGrant = {
+  ref: 'AG-01', agentIdentity: 'svc-meridian-reply', actingFor: 'org:meridian',
+  mode: 'organisation_delegated', businessOwner: 'Casework', technicalOwner: 'AI Platform',
+  accountableSponsor: 'Director of Operations', purpose: 'Draft case replies',
+  permittedResources: ['case-store'], permittedActions: ['case:read', 'draft:create'],
+  prohibitedActions: ['case:delete'], identityProvider: 'entra', credentialType: 'oidc',
+  tokenAudience: 'api://case-store', scopes: ['case.read'], credentialLifetimeSeconds: 900,
+  grantStart: '2026-06-01', grantExpiry: '2027-03-31', maySpawnSubAgents: true,
+  maxDelegationDepth: 2, maxChildAgents: 4, evidenceRefs: ['E-143'],
+};
+
+check('a child cannot hold authority its parent lacks',
+  !checkDelegation({ ...parentGrant, ref: 'AG-02', delegationParent: 'AG-01',
+    permittedActions: [...parentGrant.permittedActions, 'case:write'] }, parentGrant).valid,
+  'Authority may only narrow as it is delegated. A sub-agent spawned with a broader scope looks exactly like a correct one until it acts.');
+
+check('a child cannot drop a prohibition it inherited',
+  !checkDelegation({ ...parentGrant, ref: 'AG-03', delegationParent: 'AG-01',
+    prohibitedActions: [] }, parentGrant).valid,
+  'Otherwise prohibiting an action means only that the parent will not do it personally.');
+
+check('a properly narrowed child is valid',
+  checkDelegation({ ...parentGrant, ref: 'AG-04', delegationParent: 'AG-01',
+    permittedActions: ['case:read'], scopes: [] }, parentGrant).valid,
+  'Narrowing must be permitted, or delegation is unusable.');
+
+check('a child credential outliving its parent is flagged',
+  checkDelegation({ ...parentGrant, ref: 'AG-05', delegationParent: 'AG-01',
+    credentialLifetimeSeconds: 86400 }, parentGrant).findings.some((f) => f.code === 'lifetime_extended'),
+  'Revoking the parent would not stop the child, which defeats containment.');
+
+console.log('\nTool authority');
+
+const readContract: ToolAuthorityContract = {
+  ref: 'TAC-01', provider: 'mcp:case-store@1.2', operationId: 'mcp:case-store@1.2/case.read',
+  toolVersion: '1.2', schemaVersion: '1', permittedActions: ['read'],
+  permittedResources: ['case-store'], parameterConstraints: {},
+  permittedDataClasses: ['personal'], allowedRecipients: [], egressDestinations: [],
+  destructive: false, supportsDryRun: true, requiresHumanApproval: false,
+  requiresTwoPersonApproval: false, credentialIdentity: 'svc-meridian-reply',
+  credentialLifetimeSeconds: 900, failMode: 'fail_closed', prohibitedCombinations: [],
+};
+const sendContract: ToolAuthorityContract = {
+  ...readContract, ref: 'TAC-02', operationId: 'mcp:mail@2.0/message.send',
+  permittedActions: ['send'], permittedResources: ['mail'], permittedDataClasses: ['internal'],
+  allowedRecipients: ['casework@meridian.gov.uk'], egressDestinations: ['smtp.external.net'],
+  destructive: true, requiresHumanApproval: true, prohibitedCombinations: [],
+};
+
+check('an operation with no contract is denied rather than allowed by default',
+  !checkToolAuthority({ operationId: 'mcp:case-store@1.2/case.delete' }, [readContract]).permitted,
+  'Adding a tool must not silently widen authority. Having no contract yet is a reason to stop, not to proceed.');
+
+check('a recipient outside the allow-list is denied',
+  !checkToolAuthority({ operationId: sendContract.operationId, recipient: 'attacker@example.com',
+    approvedBy: ['reviewer'] }, [readContract, sendContract]).permitted,
+  'This is the boundary an exfiltration path crosses.');
+
+check('a destructive operation without approval is denied',
+  !checkToolAuthority({ operationId: sendContract.operationId,
+    recipient: 'casework@meridian.gov.uk' }, [readContract, sendContract]).permitted,
+  'The contract requires human approval and none was recorded.');
+
+check('a dry run does not require the approval the real call needs',
+  checkToolAuthority({ operationId: sendContract.operationId, dryRun: true,
+    recipient: 'casework@meridian.gov.uk' }, [readContract, sendContract]).permitted,
+  'A dry run needing the same approval as the real call is the real call with extra steps.');
+
+check('read-sensitive plus write-external is reported as a compositional risk',
+  findCompositionalRisks([readContract, sendContract]).length === 1,
+  'Individually safe tools compose into unsafe paths. Read-a-document plus send-a-message is the canonical exfiltration primitive, and neither contract forbids the other.');
 
 console.log(`\n${failures === 0 ? 'All checks passed.' : `${failures} CHECK(S) FAILED.`}\n`);
 process.exitCode = failures === 0 ? 0 : 1;
