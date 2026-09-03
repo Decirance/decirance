@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.decirance.org/context-contract/0.1.0.json",
+  "title": "Context Contract",
+  "description": "The conditions under which an agent is INTENDED to operate. Held separately from the Agent Passport because the two change independently: the same build moved into a different business context is as much a new decision as a new build in the same context. A Passport says what the agent can do; a Contract says what it is permitted to do. Comparing them mechanically catches divergence — usually a tool added without revisiting the contract — which no runtime monitoring surfaces, because nothing has gone wrong yet.",
+  "type": "object",
+  "required": ["schema_version", "contract_id", "contract_version", "owner", "purpose", "operating", "risk"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": { "type": "string", "const": "0.1.0" },
+    "contract_id": { "type": "string", "minLength": 1 },
+    "contract_version": { "type": "string", "minLength": 1 },
+    "owner": { "type": "string", "minLength": 1 },
+    "purpose": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Business purpose. Assurance is context-specific; without a purpose there is no context to assure against."
+    },
+    "scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "intended_users": { "type": "array", "items": { "type": "string" } },
+        "affected_parties": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "People who bear consequences without choosing to use the agent."
+        },
+        "permitted_actions": { "type": "array", "items": { "type": "string" } },
+        "prohibited_actions": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Red lines. A capability the agent actually holds that appears here is a demonstrated breach, which caps the recommendation at reject. A contract declaring nothing prohibited cannot produce a breach, and is more likely incomplete than permissive."
+        },
+        "accessible_data": { "type": "array", "items": { "type": "string" } },
+        "connected_tools": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "operating": {
+      "type": "object",
+      "required": ["autonomy_level"],
+      "additionalProperties": false,
+      "properties": {
+        "autonomy_level": { "type": "string" },
+        "required_human_oversight": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Action classes needing human confirmation. If this is non-empty and the Passport records no review workflow, the control the approval depends on is absent — a breach rather than a gap."
+        },
+        "dependencies": { "type": "array", "items": { "type": "string" } },
+        "recovery_objectives": { "type": "object" }
+      }
+    },
+    "risk": {
+      "type": "object",
+      "required": ["appetite"],
+      "additionalProperties": false,
+      "properties": {
+        "appetite": { "type": "string" },
+        "stop_conditions": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Conditions under which operation must stop, stated in advance rather than judged during an incident."
+        }
+      }
+    }
+  }
+}

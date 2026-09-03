@@ -1,0 +1,50 @@
+{
+  "schema_version": "0.1.0",
+  "permit_id": "DP-2026-014",
+  "permit_version": 1,
+  "agent_id": "agt_meridian_reply",
+  "agent_version": "3.0.0",
+  "context_version": "3.2.0",
+  "passport_digest": "fnv1a:0a0b161b",
+  "state": "active",
+  "level": "conditional",
+  "permitted_actions": [
+    "case:read",
+    "document:read",
+    "draft:create",
+    "review:request"
+  ],
+  "prohibited_actions": [
+    "message:send",
+    "case:close",
+    "payment:execute",
+    "case:write"
+  ],
+  "conditions": [
+    "Human approval before any external send",
+    "Read-only case retrieval only",
+    "Weekly injection challenge pack"
+  ],
+  "residual_risks": [
+    "RR-02 — incorrect draft may influence a reviewer"
+  ],
+  "suspension_triggers": [
+    "permission_granted",
+    "tool_added",
+    "human_oversight",
+    "model_version",
+    "dependency_provider",
+    "data_processing_terms",
+    "data_residency",
+    "mcp_server_added",
+    "index_content_source"
+  ],
+  "valid_from": "2026-06-18T00:00:00.000Z",
+  "expires_at": "2026-09-30T23:59:59.000Z",
+  "accountable_owner": "Ari Rios",
+  "approved_by": "Ari Rios",
+  "approved_at": "2026-06-18T11:05:00.000Z",
+  "attestation": {
+    "cryptographically_signed": false
+  }
+}

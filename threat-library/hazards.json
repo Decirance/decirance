@@ -1,0 +1,156 @@
+{
+  "schema_version": "0.1.0",
+  "hazards": [
+    {
+      "ref": "H-01",
+      "title": "Untrusted content becomes instruction",
+      "description": "Retrieved documents, email or tool output carry text the model follows as direction rather than treating as data.",
+      "domain": "cyber",
+      "severity": "critical",
+      "themes": [
+        "deterministic_safeguards",
+        "explicit_red_lines",
+        "threat_modelling"
+      ],
+      "addressedBy": [
+        "C-04",
+        "C-12"
+      ]
+    },
+    {
+      "ref": "H-02",
+      "title": "Authority exceeds what was assessed",
+      "description": "The agent acquires a permission, tool or autonomy level beyond the boundary the evidence justified.",
+      "domain": "cyber",
+      "severity": "critical",
+      "themes": [
+        "least_privilege_credentials",
+        "proportional_autonomy",
+        "unique_agent_identity"
+      ],
+      "addressedBy": [
+        "C-01",
+        "C-02",
+        "C-06"
+      ]
+    },
+    {
+      "ref": "H-03",
+      "title": "Retrieval corpus contamination",
+      "description": "An unauthorised or unverified source enters the index, so poisoned content reaches the agent through a trusted path.",
+      "domain": "cyber",
+      "severity": "high",
+      "themes": [
+        "supply_chain_integrity",
+        "threat_modelling",
+        "deterministic_safeguards"
+      ],
+      "addressedBy": [
+        "C-11",
+        "C-12"
+      ]
+    },
+    {
+      "ref": "H-04",
+      "title": "Tool or MCP description poisoning",
+      "description": "An unsigned or altered tool manifest changes what the model believes a tool does, without any change to the tool itself.",
+      "domain": "cyber",
+      "severity": "high",
+      "themes": [
+        "supply_chain_integrity",
+        "deterministic_safeguards"
+      ],
+      "addressedBy": [
+        "C-14"
+      ]
+    },
+    {
+      "ref": "H-05",
+      "title": "Memory contamination and drift",
+      "description": "Planted or stale memory influences later decisions after the originating interaction is gone.",
+      "domain": "both",
+      "severity": "moderate",
+      "themes": [
+        "deterministic_safeguards",
+        "immutable_logs"
+      ],
+      "addressedBy": [
+        "C-13"
+      ]
+    },
+    {
+      "ref": "H-06",
+      "title": "Human oversight is bypassed or ineffective",
+      "description": "A consequential action completes without the named approver, or the approval is a rubber stamp.",
+      "domain": "cyber",
+      "severity": "critical",
+      "themes": [
+        "gated_approvals",
+        "human_oversight",
+        "explicit_red_lines"
+      ],
+      "addressedBy": [
+        "C-01",
+        "C-06"
+      ]
+    },
+    {
+      "ref": "H-07",
+      "title": "Dependency failure degrades unsafely",
+      "description": "Loss of retrieval, a model endpoint or a downstream service produces confident but unsourced output instead of a safe stop.",
+      "domain": "resilience",
+      "severity": "high",
+      "themes": [
+        "incident_response",
+        "emergency_shutdown"
+      ],
+      "addressedBy": [
+        "C-07",
+        "C-09"
+      ]
+    },
+    {
+      "ref": "H-08",
+      "title": "Action is not reconstructable after the fact",
+      "description": "Tool calls, retrieved sources and reviewer decisions cannot be correlated, so an incident cannot be investigated.",
+      "domain": "both",
+      "severity": "high",
+      "themes": [
+        "immutable_logs",
+        "telemetry",
+        "incident_response"
+      ],
+      "addressedBy": [
+        "C-05"
+      ]
+    },
+    {
+      "ref": "H-09",
+      "title": "State is lost or duplicated on interruption",
+      "description": "A restart mid-task loses case state or repeats an action that should have happened once.",
+      "domain": "resilience",
+      "severity": "moderate",
+      "themes": [
+        "incident_response",
+        "sandboxing"
+      ],
+      "addressedBy": [
+        "C-08"
+      ]
+    },
+    {
+      "ref": "H-10",
+      "title": "Contractual conditions no longer hold",
+      "description": "Retention, residency or entitlement terms change so that processing continues outside what was approved.",
+      "domain": "cyber",
+      "severity": "high",
+      "themes": [
+        "supply_chain_integrity",
+        "threat_modelling"
+      ],
+      "addressedBy": [
+        "C-10"
+      ]
+    }
+  ]
+}

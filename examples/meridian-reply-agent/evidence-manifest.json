@@ -1,0 +1,278 @@
+{
+  "schema_version": "0.1.0",
+  "case_id": "case_meridian_v1",
+  "evidence": [
+    {
+      "ref": "E-104",
+      "title": "Context Contract v3.2",
+      "detail": "Tool allow-list, purpose boundary, case scope",
+      "source_kind": "attestation",
+      "scope_passport_digest": "passport:v3",
+      "scope_contract_digest": "contract:v3.2",
+      "collected_at": "2026-06-18T00:00:00.000Z",
+      "collected_by": "AI Platform",
+      "quality": {
+        "provenance": 95,
+        "coverage": 80,
+        "construct_validity": 75,
+        "ecological_validity": 70,
+        "repeatability": 90
+      }
+    },
+    {
+      "ref": "E-098",
+      "title": "Replay set / customer intents",
+      "detail": "1,240 reviewed conversations · 94.8% pass",
+      "source_kind": "inspect_eval",
+      "scope_passport_digest": "passport:v3",
+      "scope_contract_digest": "contract:v3.2",
+      "collected_at": "2026-06-16T00:00:00.000Z",
+      "collected_by": "Trust Engineering",
+      "quality": {
+        "provenance": 90,
+        "coverage": 85,
+        "construct_validity": 70,
+        "ecological_validity": 80,
+        "repeatability": 85
+      }
+    },
+    {
+      "ref": "E-093",
+      "title": "Reviewer gate: external send",
+      "detail": "Human approval required for outbound action",
+      "source_kind": "control_test",
+      "scope_passport_digest": "passport:v3",
+      "scope_contract_digest": "contract:v3.2",
+      "collected_at": "2026-06-12T00:00:00.000Z",
+      "collected_by": "CX Operations",
+      "quality": {
+        "provenance": 95,
+        "coverage": 90,
+        "construct_validity": 85,
+        "ecological_validity": 85,
+        "repeatability": 80
+      }
+    },
+    {
+      "ref": "E-087",
+      "title": "Injection challenge pack",
+      "detail": "412 adversarial prompts · 96.1% surfaced",
+      "source_kind": "inspect_eval",
+      "scope_passport_digest": "passport:v3",
+      "scope_contract_digest": "contract:v3.2",
+      "collected_at": "2026-06-09T00:00:00.000Z",
+      "collected_by": "Security Assurance",
+      "quality": {
+        "provenance": 90,
+        "coverage": 70,
+        "construct_validity": 80,
+        "ecological_validity": 55,
+        "repeatability": 75
+      }
+    },
+    {
+      "ref": "E-081",
+      "title": "PII redaction policy",
+      "detail": "Tokenize before retrieval and generation",
+      "source_kind": "config_snapshot",
+      "scope_passport_digest": "passport:v3",
+      "scope_contract_digest": "contract:v3.2",
+      "collected_at": "2026-06-05T00:00:00.000Z",
+      "collected_by": "Privacy Office",
+      "quality": {
+        "provenance": 90,
+        "coverage": 75,
+        "construct_validity": 70,
+        "ecological_validity": 65,
+        "repeatability": 95
+      }
+    },
+    {
+      "ref": "E-075",
+      "title": "Failover rehearsal / retrieval",
+      "detail": "18m degraded mode · no unsourced drafts",
+      "source_kind": "resilience_test",
+      "scope_passport_digest": "passport:v3",
+      "scope_contract_digest": "contract:v3.2",
+      "collected_at": "2026-05-29T00:00:00.000Z",
+      "collected_by": "SRE",
+      "quality": {
+        "provenance": 85,
+        "coverage": 65,
+        "construct_validity": 75,
+        "ecological_validity": 90,
+        "repeatability": 60
+      }
+    },
+    {
+      "ref": "E-069",
+      "title": "Audit trail sample",
+      "detail": "100% tool and reviewer events correlated",
+      "source_kind": "runtime_log",
+      "scope_passport_digest": "passport:v3",
+      "scope_contract_digest": "contract:v3.2",
+      "collected_at": "2026-05-22T00:00:00.000Z",
+      "collected_by": "Platform Ops",
+      "quality": {
+        "provenance": 95,
+        "coverage": 85,
+        "construct_validity": 80,
+        "ecological_validity": 95,
+        "repeatability": 85
+      }
+    },
+    {
+      "ref": "E-061",
+      "title": "Case access role matrix",
+      "detail": "Read-only access mapped to case owner",
+      "source_kind": "config_snapshot",
+      "scope_passport_digest": "passport:v3",
+      "scope_contract_digest": "contract:v3.2",
+      "collected_at": "2026-05-19T00:00:00.000Z",
+      "collected_by": "IAM",
+      "quality": {
+        "provenance": 95,
+        "coverage": 90,
+        "construct_validity": 85,
+        "ecological_validity": 75,
+        "repeatability": 95
+      }
+    },
+    {
+      "ref": "E-055",
+      "title": "Interrupt / resume test",
+      "detail": "40 runs · state preserved across restart",
+      "source_kind": "resilience_test",
+      "scope_passport_digest": "passport:v3",
+      "scope_contract_digest": "contract:v3.2",
+      "collected_at": "2026-05-14T00:00:00.000Z",
+      "collected_by": "SRE",
+      "quality": {
+        "provenance": 85,
+        "coverage": 70,
+        "construct_validity": 75,
+        "ecological_validity": 80,
+        "repeatability": 90
+      }
+    },
+    {
+      "ref": "E-049",
+      "title": "Recovery objective rehearsal",
+      "detail": "RTO 27m against a 30m objective",
+      "source_kind": "resilience_test",
+      "scope_passport_digest": "passport:v3",
+      "scope_contract_digest": "contract:v3.2",
+      "collected_at": "2026-05-11T00:00:00.000Z",
+      "collected_by": "SRE",
+      "quality": {
+        "provenance": 85,
+        "coverage": 60,
+        "construct_validity": 80,
+        "ecological_validity": 85,
+        "repeatability": 65
+      }
+    },
+    {
+      "ref": "E-118",
+      "title": "Enterprise agreement / data terms",
+      "detail": "No prompt retention · no training use · UK residency",
+      "source_kind": "contract_attestation",
+      "scope_passport_digest": "passport:v3",
+      "scope_contract_digest": "contract:v3.2",
+      "collected_at": "2026-06-20T00:00:00.000Z",
+      "collected_by": "Procurement",
+      "quality": {
+        "provenance": 95,
+        "coverage": 85,
+        "construct_validity": 90,
+        "ecological_validity": 80,
+        "repeatability": 95
+      }
+    },
+    {
+      "ref": "E-121",
+      "title": "Retrieval source allowlist",
+      "detail": "Two internal sources · owner recorded per source",
+      "source_kind": "config_snapshot",
+      "scope_passport_digest": "passport:v3",
+      "scope_contract_digest": "contract:v3.2",
+      "collected_at": "2026-06-14T00:00:00.000Z",
+      "collected_by": "AI Platform",
+      "quality": {
+        "provenance": 95,
+        "coverage": 90,
+        "construct_validity": 85,
+        "ecological_validity": 80,
+        "repeatability": 95
+      }
+    },
+    {
+      "ref": "E-124",
+      "title": "RAG poisoning pack",
+      "detail": "180 planted documents · 97.2% refused as instruction",
+      "source_kind": "inspect_eval",
+      "scope_passport_digest": "passport:v3",
+      "scope_contract_digest": "contract:v3.2",
+      "collected_at": "2026-06-17T00:00:00.000Z",
+      "collected_by": "Security Assurance",
+      "quality": {
+        "provenance": 90,
+        "coverage": 75,
+        "construct_validity": 85,
+        "ecological_validity": 65,
+        "repeatability": 80
+      }
+    },
+    {
+      "ref": "E-127",
+      "title": "Memory write control test",
+      "detail": "Only the agent identity may write · 40 rollback runs passed",
+      "source_kind": "control_test",
+      "scope_passport_digest": "passport:v3",
+      "scope_contract_digest": "contract:v3.2",
+      "collected_at": "2026-06-11T00:00:00.000Z",
+      "collected_by": "Platform Ops",
+      "quality": {
+        "provenance": 90,
+        "coverage": 80,
+        "construct_validity": 80,
+        "ecological_validity": 75,
+        "repeatability": 90
+      }
+    },
+    {
+      "ref": "E-130",
+      "title": "MCP manifest signatures",
+      "detail": "1 registered server · manifest signed and pinned to 1.2",
+      "source_kind": "attestation",
+      "scope_passport_digest": "passport:v3",
+      "scope_contract_digest": "contract:v3.2",
+      "collected_at": "2026-06-19T00:00:00.000Z",
+      "collected_by": "AI Platform",
+      "quality": {
+        "provenance": 95,
+        "coverage": 85,
+        "construct_validity": 90,
+        "ecological_validity": 85,
+        "repeatability": 95
+      }
+    },
+    {
+      "ref": "E-112",
+      "title": "Adaptive injection finding",
+      "detail": "Adaptive attack reached a draft tool call in 3 of 200 runs",
+      "source_kind": "inspect_eval",
+      "scope_passport_digest": "passport:v3",
+      "scope_contract_digest": "contract:v3.2",
+      "collected_at": "2026-06-24T00:00:00.000Z",
+      "collected_by": "Security Assurance",
+      "quality": {
+        "provenance": 90,
+        "coverage": 55,
+        "construct_validity": 85,
+        "ecological_validity": 70,
+        "repeatability": 70
+      }
+    }
+  ]
+}

@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.decirance.org/evidence-manifest/0.1.0.json",
+  "title": "Evidence Manifest",
+  "description": "Evidence artefacts and their receipts. A receipt binds an artefact to the configuration it was collected against, who collected it and when. Without one, 'this test passed' is a claim about an unnamed artefact from an unnamed party at an unknown time against an unknown configuration — an assertion, not evidence.",
+  "type": "object",
+  "required": ["schema_version", "case_id", "evidence"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": { "type": "string", "const": "0.1.0" },
+    "case_id": { "type": "string", "minLength": 1 },
+    "evidence": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["ref", "title", "source_kind", "scope_passport_digest", "collected_at", "collected_by", "quality"],
+        "additionalProperties": false,
+        "properties": {
+          "ref": { "type": "string" },
+          "title": { "type": "string" },
+          "detail": { "type": "string" },
+          "domain": { "enum": ["cyber", "resilience", "both"] },
+          "state": {
+            "enum": ["draft", "submitted", "verified", "stale", "superseded", "withdrawn"],
+            "description": "Lifecycle of the ARTEFACT. Applicability to a particular claim lives on the graph edge, not here: one artefact can stop justifying one claim while still justifying another at the same instant, which a single node-level state cannot express."
+          },
+          "source_kind": {
+            "type": "string",
+            "description": "Where it came from: inspect_eval, config_snapshot, control_test, attestation, runtime_log, contract_attestation."
+          },
+          "source_uri": { "type": "string" },
+          "artefact_digest": { "type": "string" },
+          "scope_passport_digest": {
+            "type": "string",
+            "description": "Passport the artefact was collected against. Divergence from the case's current Passport is reported but does NOT on its own invalidate: after any change every artefact predates the new Passport, so treating staleness as invalidation would collapse the whole case. Severed edges decide."
+          },
+          "scope_contract_digest": { "type": "string" },
+          "collected_at": { "type": "string", "format": "date-time" },
+          "collected_by": { "type": "string" },
+          "valid_until": { "type": "string", "format": "date-time" },
+          "quality": {
+            "type": "object",
+            "required": ["provenance", "coverage", "construct_validity", "ecological_validity", "repeatability"],
+            "additionalProperties": false,
+            "description": "Five dimensions, recorded separately and NEVER averaged. Strong provenance concealing weak ecological validity is exactly the failure an average produces: one says the artefact is traceable, the other says it resembles production, and they are not interchangeable.",
+            "properties": {
+              "provenance": { "type": "integer", "minimum": 0, "maximum": 100, "description": "Can this be traced to the run and code that produced it?" },
+              "coverage": { "type": "integer", "minimum": 0, "maximum": 100, "description": "How much of the relevant space was exercised?" },
+              "construct_validity": { "type": "integer", "minimum": 0, "maximum": 100, "description": "Does the test actually measure the claim? A human judgement; no log can evidence it." },
+              "ecological_validity": { "type": "integer", "minimum": 0, "maximum": 100, "description": "Did the environment resemble production? Also a human judgement." },
+              "repeatability": { "type": "integer", "minimum": 0, "maximum": 100, "description": "Would a re-run produce the same result?" }
+            }
+          },
+          "receipt_digest": { "type": "string" }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,87 @@
+{
+  "schema_version": "0.1.0",
+  "agent_id": "agt_meridian_reply",
+  "agent_version": "3.0.0",
+  "owner": "Ari Rios",
+  "purpose": "Triage inbound casework and draft responses for human review.",
+  "environment": "uk-south-prod",
+  "created_at": "2026-09-03T01:17:22.459Z",
+  "components": {
+    "model": {
+      "provider": "anthropic",
+      "model": "claude-sonnet-5",
+      "version": "2026-04-01"
+    },
+    "prompt_digest": "sha256:2f1a…c9",
+    "memory": {
+      "scope": "case",
+      "retentionDays": 30
+    },
+    "tools": [
+      {
+        "id": "case.read"
+      },
+      {
+        "id": "document.read"
+      },
+      {
+        "id": "response.draft"
+      },
+      {
+        "id": "review.request"
+      }
+    ],
+    "data_sources": [
+      "case-store",
+      "document-store"
+    ],
+    "guardrails": [
+      "pii-redaction",
+      "injection-filter"
+    ],
+    "identity": {
+      "principal": "svc-meridian-reply",
+      "scope": "case-owner"
+    },
+    "dependencies": [
+      "retrieval-svc",
+      "model-api"
+    ],
+    "mcp_servers": [
+      "mcp:case-store@1.2"
+    ],
+    "index_content_sources": [
+      "internal:policy-library"
+    ],
+    "memory_write_policy": {
+      "writers": [
+        "agent"
+      ],
+      "retention": "30d",
+      "rollback": "enabled"
+    },
+    "model_artifact_digest": "sha256:4c1e…7b"
+  },
+  "operating": {
+    "autonomy_level": "assisted",
+    "human_review": {
+      "externalSend": "required",
+      "caseUpdate": "required"
+    },
+    "recovery_objectives": {
+      "rto": "30m",
+      "rpo": "5m"
+    }
+  },
+  "entitlement": {
+    "provider_plan": "enterprise",
+    "account_binding": "org:meridian-council",
+    "data_processing_terms": {
+      "promptRetention": "none",
+      "trainingUse": "prohibited"
+    },
+    "data_residency": "uk",
+    "expiry": "2027-03-31"
+  },
+  "digest": "fnv1a:0a0b161b"
+}

@@ -1,0 +1,442 @@
+{
+  "schema_version": "0.1.0",
+  "case_id": "case_meridian_v1",
+  "claims": [
+    {
+      "ref": "C-01",
+      "statement": "The agent cannot alter durable customer state without a named human approver.",
+      "domain": "cyber",
+      "critical": true,
+      "coversTests": [
+        "human-approval-workflow-test"
+      ],
+      "evidence": {
+        "supports": [
+          "E-093"
+        ],
+        "challenges": []
+      }
+    },
+    {
+      "ref": "C-02",
+      "statement": "The agent operates under least privilege for its case scope.",
+      "domain": "cyber",
+      "critical": true,
+      "coversTests": [
+        "least-privilege-review"
+      ],
+      "evidence": {
+        "supports": [
+          "E-061"
+        ],
+        "challenges": []
+      }
+    },
+    {
+      "ref": "C-03",
+      "statement": "Retrieval is limited to the assigned case and linked history.",
+      "domain": "cyber",
+      "critical": false,
+      "coversTests": [
+        "retrieval-scope-test"
+      ],
+      "evidence": {
+        "supports": [
+          "E-098",
+          "E-081"
+        ],
+        "challenges": []
+      }
+    },
+    {
+      "ref": "C-04",
+      "statement": "Injected instructions in inbound documents do not cause tool misuse.",
+      "domain": "cyber",
+      "critical": true,
+      "coversTests": [
+        "injection-challenge-pack"
+      ],
+      "evidence": {
+        "supports": [
+          "E-087"
+        ],
+        "challenges": [
+          "E-112"
+        ]
+      }
+    },
+    {
+      "ref": "C-05",
+      "statement": "Every tool call and reviewer decision is auditable.",
+      "domain": "cyber",
+      "critical": false,
+      "coversTests": [
+        "audit-trail-sample"
+      ],
+      "evidence": {
+        "supports": [
+          "E-069"
+        ],
+        "challenges": []
+      }
+    },
+    {
+      "ref": "C-06",
+      "statement": "The agent cannot send external communication without human approval.",
+      "domain": "cyber",
+      "critical": true,
+      "coversTests": [
+        "external-send-gate-test"
+      ],
+      "evidence": {
+        "supports": [
+          "E-093",
+          "E-104"
+        ],
+        "challenges": []
+      }
+    },
+    {
+      "ref": "C-07",
+      "statement": "Degraded retrieval does not produce unsourced drafts.",
+      "domain": "resilience",
+      "critical": false,
+      "coversTests": [
+        "failover-rehearsal"
+      ],
+      "evidence": {
+        "supports": [
+          "E-075"
+        ],
+        "challenges": []
+      }
+    },
+    {
+      "ref": "C-08",
+      "statement": "Case state is preserved across an unplanned restart.",
+      "domain": "resilience",
+      "critical": false,
+      "coversTests": [
+        "interrupt-resume-test"
+      ],
+      "evidence": {
+        "supports": [
+          "E-055"
+        ],
+        "challenges": []
+      }
+    },
+    {
+      "ref": "C-10",
+      "statement": "Customer data is processed only under the approved retention and residency terms.",
+      "domain": "cyber",
+      "critical": true,
+      "coversTests": [
+        "data-processing-terms-review",
+        "residency-attestation"
+      ],
+      "evidence": {
+        "supports": [
+          "E-118",
+          "E-081"
+        ],
+        "challenges": []
+      }
+    },
+    {
+      "ref": "C-11",
+      "statement": "Retrieval sources are authorised, allowlisted and traceable to an owner.",
+      "domain": "cyber",
+      "critical": true,
+      "coversTests": [
+        "retrieval-allowlist-review",
+        "source-provenance-check"
+      ],
+      "evidence": {
+        "supports": [
+          "E-121"
+        ],
+        "challenges": []
+      }
+    },
+    {
+      "ref": "C-12",
+      "statement": "Untrusted retrieved content cannot become executable instruction.",
+      "domain": "cyber",
+      "critical": true,
+      "coversTests": [
+        "rag-poisoning-pack",
+        "indirect-injection-pack"
+      ],
+      "evidence": {
+        "supports": [
+          "E-124"
+        ],
+        "challenges": []
+      }
+    },
+    {
+      "ref": "C-13",
+      "statement": "Agent memory has controlled writers, retention and rollback.",
+      "domain": "both",
+      "critical": false,
+      "coversTests": [
+        "memory-write-control-test",
+        "memory-rollback-rehearsal"
+      ],
+      "evidence": {
+        "supports": [
+          "E-127"
+        ],
+        "challenges": []
+      }
+    },
+    {
+      "ref": "C-14",
+      "statement": "Tool and MCP server descriptions are signed or allowlisted before use.",
+      "domain": "cyber",
+      "critical": true,
+      "coversTests": [
+        "mcp-manifest-signature-check",
+        "tool-description-poisoning-pack"
+      ],
+      "evidence": {
+        "supports": [
+          "E-130"
+        ],
+        "challenges": []
+      }
+    },
+    {
+      "ref": "C-09",
+      "statement": "The service meets its recovery time objective after a dependency failure.",
+      "domain": "resilience",
+      "critical": true,
+      "coversTests": [
+        "recovery-objective-test"
+      ],
+      "evidence": {
+        "supports": [
+          "E-049"
+        ],
+        "challenges": []
+      }
+    }
+  ],
+  "edges": [
+    {
+      "kind": "supports",
+      "sourceRef": "E-061",
+      "targetRef": "C-02",
+      "severedBy": [
+        "permission_granted",
+        "permission_revoked"
+      ]
+    },
+    {
+      "kind": "supports",
+      "sourceRef": "E-093",
+      "targetRef": "C-01",
+      "severedBy": [
+        "permission_granted",
+        "human_oversight",
+        "autonomy_level"
+      ]
+    },
+    {
+      "kind": "supports",
+      "sourceRef": "E-093",
+      "targetRef": "C-06",
+      "severedBy": [
+        "human_oversight",
+        "tool_added"
+      ]
+    },
+    {
+      "kind": "supports",
+      "sourceRef": "E-098",
+      "targetRef": "C-03",
+      "severedBy": [
+        "data_source_added",
+        "retrieval_service"
+      ]
+    },
+    {
+      "kind": "supports",
+      "sourceRef": "E-081",
+      "targetRef": "C-03",
+      "severedBy": [
+        "data_source_added",
+        "guardrail_config"
+      ]
+    },
+    {
+      "kind": "supports",
+      "sourceRef": "E-087",
+      "targetRef": "C-04",
+      "severedBy": [
+        "model_version",
+        "system_prompt",
+        "tool_added"
+      ]
+    },
+    {
+      "kind": "challenges",
+      "sourceRef": "E-112",
+      "targetRef": "C-04",
+      "severedBy": [
+        "guardrail_config"
+      ]
+    },
+    {
+      "kind": "supports",
+      "sourceRef": "E-069",
+      "targetRef": "C-05",
+      "severedBy": [
+        "tool_added",
+        "guardrail_config"
+      ]
+    },
+    {
+      "kind": "supports",
+      "sourceRef": "E-075",
+      "targetRef": "C-07",
+      "severedBy": [
+        "dependency_provider",
+        "retrieval_service"
+      ]
+    },
+    {
+      "kind": "supports",
+      "sourceRef": "E-055",
+      "targetRef": "C-08",
+      "severedBy": [
+        "deployment_environment"
+      ]
+    },
+    {
+      "kind": "supports",
+      "sourceRef": "E-049",
+      "targetRef": "C-09",
+      "severedBy": [
+        "dependency_provider",
+        "recovery_objective",
+        "third_party_dependency"
+      ]
+    },
+    {
+      "kind": "supports",
+      "sourceRef": "E-104",
+      "targetRef": "C-06",
+      "severedBy": [
+        "tool_added",
+        "autonomy_level"
+      ]
+    },
+    {
+      "kind": "supports",
+      "sourceRef": "E-118",
+      "targetRef": "C-10",
+      "severedBy": [
+        "data_processing_terms",
+        "data_residency",
+        "provider_plan",
+        "account_binding",
+        "entitlement_expiry"
+      ]
+    },
+    {
+      "kind": "supports",
+      "sourceRef": "E-081",
+      "targetRef": "C-10",
+      "severedBy": [
+        "data_residency",
+        "guardrail_config"
+      ]
+    },
+    {
+      "kind": "supports",
+      "sourceRef": "E-121",
+      "targetRef": "C-11",
+      "severedBy": [
+        "data_source_added",
+        "index_content_source"
+      ]
+    },
+    {
+      "kind": "supports",
+      "sourceRef": "E-124",
+      "targetRef": "C-12",
+      "severedBy": [
+        "data_source_added",
+        "index_content_source",
+        "model_version",
+        "system_prompt"
+      ]
+    },
+    {
+      "kind": "supports",
+      "sourceRef": "E-127",
+      "targetRef": "C-13",
+      "severedBy": [
+        "memory_write_policy",
+        "memory_config"
+      ]
+    },
+    {
+      "kind": "supports",
+      "sourceRef": "E-130",
+      "targetRef": "C-14",
+      "severedBy": [
+        "mcp_server_added",
+        "mcp_server_changed",
+        "tool_schema_changed"
+      ]
+    },
+    {
+      "kind": "derives_from",
+      "sourceRef": "C-12",
+      "targetRef": "C-11",
+      "severedBy": []
+    },
+    {
+      "kind": "derives_from",
+      "sourceRef": "C-05",
+      "targetRef": "C-01",
+      "severedBy": []
+    }
+  ],
+  "mcp_servers": [
+    {
+      "name": "case-store",
+      "transport": "http",
+      "deployment": "remote",
+      "endpoint": "https://mcp.internal/case-store",
+      "version": "1.2",
+      "owner": "AI Platform",
+      "authMethod": "workload-identity",
+      "scopes": [
+        "case:read",
+        "document:read"
+      ],
+      "approved": true,
+      "lastReviewed": "2026-06-19",
+      "tools": [
+        {
+          "name": "case.read",
+          "description": "Read the assigned case record and its linked history.",
+          "permissions": [
+            "case:read"
+          ]
+        },
+        {
+          "name": "document.read",
+          "description": "Read a document attached to the assigned case.",
+          "permissions": [
+            "document:read"
+          ]
+        }
+      ]
+    }
+  ]
+}

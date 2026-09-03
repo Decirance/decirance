@@ -1,0 +1,26 @@
+{
+  "name": "decirance",
+  "version": "0.1.0",
+  "description": "Open assurance framework for deciding whether a specific AI agent may operate in a specific context, and what must be reassessed when it changes.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "repository": { "type": "git", "url": "https://github.com/Decirance/decirance.git" },
+  "homepage": "https://github.com/Decirance/decirance",
+  "bugs": "https://github.com/Decirance/decirance/issues",
+  "keywords": ["ai-agents", "assurance", "ai-governance", "mcp", "security", "deployment-permit"],
+  "exports": { ".": "./src/index.ts" },
+  "bin": { "decirance": "./cli/decirance.ts" },
+  "files": ["src", "cli", "schemas", "examples", "threat-library", "framework-mappings"],
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "build:examples": "tsx ./cli/build-examples.ts",
+    "scan": "tsx ./cli/decirance.ts scan",
+    "test": "tsx ./cli/verify.ts"
+  },
+  "devDependencies": {
+    "typescript": "~5.9.3",
+    "tsx": "^4.21.0",
+    "@types/node": "^22.10.0"
+  },
+  "engines": { "node": ">=20.6" }
+}

@@ -1,0 +1,140 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.decirance.org/agent-passport/0.1.0.json",
+  "title": "Agent Passport",
+  "description": "An immutable snapshot of the exact system being assessed. A Passport is never edited in place: assurance rests on being able to say 'this evidence was collected against v3, and you are now running v4', so mutating one destroys the only anchor the assurance case has. Fields hold digests and identifiers rather than content — a prompt digest rather than the prompt, tool and permission names rather than credentials.",
+  "type": "object",
+  "required": ["schema_version", "agent_id", "agent_version", "owner", "environment", "components"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "0.1.0",
+      "description": "Version of this schema the document claims to follow."
+    },
+    "agent_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Stable identity of the agent across configuration changes."
+    },
+    "agent_version": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Version of this configuration. Increment on any material change."
+    },
+    "owner": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Accountable human, not a team alias. A permit is a person accepting accountability; with no named individual there is nobody to issue one."
+    },
+    "purpose": {
+      "type": "string",
+      "description": "What the agent is for. Free text; the authoritative statement lives in the Context Contract."
+    },
+    "environment": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Deployment environment. Evidence collected in one environment does not automatically apply in another."
+    },
+    "created_at": { "type": "string", "format": "date-time" },
+    "components": {
+      "type": "object",
+      "required": ["model", "prompt_digest"],
+      "additionalProperties": false,
+      "description": "What the agent is made of. Each entry is a surface a change can alter.",
+      "properties": {
+        "model": {
+          "type": "object",
+          "required": ["provider", "model", "version"],
+          "additionalProperties": false,
+          "properties": {
+            "provider": { "type": "string", "minLength": 1 },
+            "model": { "type": "string", "minLength": 1 },
+            "version": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Exact version. An unpinned model can change beneath the agent with no change to its code, silently invalidating behavioural evidence."
+            }
+          }
+        },
+        "prompt_digest": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Digest of the system prompt. The prompt itself is deliberately not carried: a prompt change alters behaviour without altering configuration, so a digest is required, but the text is customer content."
+        },
+        "memory": { "type": "object", "description": "Memory scope and retention." },
+        "tools": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id"],
+            "properties": {
+              "id": { "type": "string" },
+              "version": { "type": "string" },
+              "permissions": { "type": "array", "items": { "type": "string" } }
+            }
+          }
+        },
+        "data_sources": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Systems the agent can read. An absent list means unknown, not none."
+        },
+        "guardrails": { "type": "array", "items": { "type": "string" } },
+        "identity": { "type": "object", "description": "Principal and scope the agent runs as." },
+        "dependencies": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Third-party services the agent's operation depends on."
+        },
+        "mcp_servers": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "MCP servers, ideally pinned. Tool descriptions on these servers are instruction surface and are fingerprinted separately."
+        },
+        "index_content_sources": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Sources feeding a retrieval index. Distinct from data_sources: this is content the agent may treat as authoritative."
+        },
+        "memory_write_policy": {
+          "type": "object",
+          "description": "Who may write durable memory, retention, and whether rollback exists."
+        },
+        "model_artifact_digest": {
+          "type": "string",
+          "description": "Digest of a self-hosted model or adapter, for supply-chain integrity."
+        }
+      }
+    },
+    "operating": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "autonomy_level": { "type": "string" },
+        "human_review": {
+          "type": "object",
+          "description": "Where human confirmation is required. An empty object where the Context Contract requires oversight is a breach, not a gap."
+        },
+        "recovery_objectives": { "type": "object" }
+      }
+    },
+    "entitlement": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Commercial entitlement the agent operates under. Recorded because a contractual change — a provider that starts retaining prompts, a lapsed agreement, a move from an enterprise account to a personal key — can invalidate assurance evidence with no technical change to the agent at all. This is not licence management: no seats, renewals or spend.",
+      "properties": {
+        "provider_plan": { "type": "string" },
+        "account_binding": { "type": "string" },
+        "data_processing_terms": { "type": "object" },
+        "data_residency": { "type": "string" },
+        "expiry": { "type": "string" },
+        "contract_ref": { "type": "string" }
+      }
+    },
+    "digest": {
+      "type": "string",
+      "description": "Digest over the normalised document with this field excluded. Keys are sorted before hashing so two semantically identical manifests written by different tools agree — otherwise 'has this changed?' is answered by JSON key ordering. Tamper-evident, not cryptographic."
+    }
+  }
+}

@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.decirance.org/deployment-permit/0.1.0.json",
+  "title": "Deployment Permit",
+  "description": "The human-signed, time-bounded authority to operate. Bound to a specific Passport digest, which is the point: a permit for one configuration cannot silently be applied to a modified agent. Renewal after a change issues a NEW permit bound to the new Passport rather than mutating this one, so the register always shows what was authorised at any past moment. A permit does not certify an agent as safe; it states precisely what it may do and under what conditions.",
+  "type": "object",
+  "required": ["schema_version", "permit_id", "permit_version", "agent_id", "agent_version", "passport_digest", "state", "level", "accountable_owner"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": { "type": "string", "const": "0.1.0" },
+    "permit_id": { "type": "string" },
+    "permit_version": { "type": "integer", "minimum": 1 },
+    "agent_id": { "type": "string" },
+    "agent_version": { "type": "string" },
+    "context_version": { "type": "string" },
+    "passport_digest": {
+      "type": "string",
+      "description": "Configuration fingerprint this authority is bound to."
+    },
+    "state": {
+      "enum": ["proposed", "under_review", "active", "pilot", "restricted", "suspended", "reassessment", "expired", "rejected", "revoked"],
+      "description": "Where the permit is in its life. Deliberately distinct from level: a suspended production permit and a suspended evaluation permit are different facts, and collapsing them loses the agent's approved boundary."
+    },
+    "level": {
+      "enum": ["evaluation", "supervised_pilot", "conditional", "production", "emergency_restricted"],
+      "description": "How much authority is granted."
+    },
+    "permitted_actions": { "type": "array", "items": { "type": "string" } },
+    "prohibited_actions": { "type": "array", "items": { "type": "string" } },
+    "conditions": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Named controls the approval depends on. Losing one restricts the permit."
+    },
+    "residual_risks": { "type": "array", "items": { "type": "string" } },
+    "monitoring_requirements": { "type": "array", "items": { "type": "string" } },
+    "suspension_triggers": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Material change kinds that suspend this permit automatically."
+    },
+    "restricted_to_boundary": {
+      "type": "object",
+      "description": "When restricted rather than suspended, the boundary the PREVIOUS evidence justified. Recording it explicitly is what stops a restriction quietly becoming a re-grant of the wider authority."
+    },
+    "valid_from": { "type": "string", "format": "date-time" },
+    "expires_at": { "type": "string", "format": "date-time" },
+    "accountable_owner": { "type": "string" },
+    "approved_by": { "type": "string" },
+    "approved_at": { "type": "string", "format": "date-time" },
+    "attestation": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "The signer's statement, binding them to the exact Passport, conditions and residual risks shown at the moment of signing. An approval that floats free of its evidence is a signature on a blank page.",
+      "properties": {
+        "statement": { "type": "string" },
+        "digest": { "type": "string" },
+        "cryptographically_signed": {
+          "type": "boolean",
+          "const": false,
+          "description": "Always false in v0.1. The digest is tamper-evident, not cryptographic: it detects an altered record but does not prove authorship, and anyone able to write the record can recompute it. Stated on the schema rather than left for a reader to discover, because a field that appears to prove provenance and does not is worse than one that admits its limits."
+        }
+      }
+    },
+    "supersedes": { "type": "string" }
+  }
+}

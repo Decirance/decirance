@@ -1,0 +1,325 @@
+{
+  "scenario": "Operational-resilience change — retrieval provider and recovery objective",
+  "detected_changes": [
+    {
+      "kind": "recovery_objective",
+      "domain": "resilience",
+      "field": "recoveryObjectives",
+      "from": "{\"rto\":\"30m\",\"rpo\":\"5m\"}",
+      "to": "{\"rto\":\"4h\",\"rpo\":\"1h\"}",
+      "description": "Recovery objectives changed."
+    },
+    {
+      "kind": "third_party_dependency",
+      "domain": "resilience",
+      "field": "thirdPartyDependencies",
+      "from": null,
+      "to": "retrieval-svc-eu",
+      "description": "Third-party dependency \"retrieval-svc-eu\" added."
+    },
+    {
+      "kind": "third_party_dependency",
+      "domain": "resilience",
+      "field": "thirdPartyDependencies",
+      "from": "retrieval-svc",
+      "to": null,
+      "description": "Third-party dependency \"retrieval-svc\" removed."
+    }
+  ],
+  "unclassified": [],
+  "context_compatibility": [
+    {
+      "ref": "X-01",
+      "severity": "note",
+      "field": "thirdPartyDependencies",
+      "message": "Contract names dependency \"retrieval-svc\" which the Passport does not list."
+    }
+  ],
+  "claim_impacts": [
+    {
+      "claimRef": "C-01",
+      "statement": "The agent cannot alter durable customer state without a named human approver.",
+      "domain": "cyber",
+      "critical": true,
+      "impact": "preserved",
+      "triggeredBy": [],
+      "path": [],
+      "invalidatedEvidenceRefs": [],
+      "preservedEvidenceRefs": [
+        "E-093"
+      ],
+      "challengingEvidenceRefs": [],
+      "requiredTests": []
+    },
+    {
+      "claimRef": "C-02",
+      "statement": "The agent operates under least privilege for its case scope.",
+      "domain": "cyber",
+      "critical": true,
+      "impact": "preserved",
+      "triggeredBy": [],
+      "path": [],
+      "invalidatedEvidenceRefs": [],
+      "preservedEvidenceRefs": [
+        "E-061"
+      ],
+      "challengingEvidenceRefs": [],
+      "requiredTests": []
+    },
+    {
+      "claimRef": "C-03",
+      "statement": "Retrieval is limited to the assigned case and linked history.",
+      "domain": "cyber",
+      "critical": false,
+      "impact": "preserved",
+      "triggeredBy": [],
+      "path": [],
+      "invalidatedEvidenceRefs": [],
+      "preservedEvidenceRefs": [
+        "E-098",
+        "E-081"
+      ],
+      "challengingEvidenceRefs": [],
+      "requiredTests": []
+    },
+    {
+      "claimRef": "C-04",
+      "statement": "Injected instructions in inbound documents do not cause tool misuse.",
+      "domain": "cyber",
+      "critical": true,
+      "impact": "challenged",
+      "triggeredBy": [],
+      "path": [],
+      "invalidatedEvidenceRefs": [],
+      "preservedEvidenceRefs": [
+        "E-087"
+      ],
+      "challengingEvidenceRefs": [
+        "E-112"
+      ],
+      "requiredTests": [
+        "injection-challenge-pack"
+      ]
+    },
+    {
+      "claimRef": "C-05",
+      "statement": "Every tool call and reviewer decision is auditable.",
+      "domain": "cyber",
+      "critical": false,
+      "impact": "preserved",
+      "triggeredBy": [],
+      "path": [],
+      "invalidatedEvidenceRefs": [],
+      "preservedEvidenceRefs": [
+        "E-069"
+      ],
+      "challengingEvidenceRefs": [],
+      "requiredTests": []
+    },
+    {
+      "claimRef": "C-06",
+      "statement": "The agent cannot send external communication without human approval.",
+      "domain": "cyber",
+      "critical": true,
+      "impact": "preserved",
+      "triggeredBy": [],
+      "path": [],
+      "invalidatedEvidenceRefs": [],
+      "preservedEvidenceRefs": [
+        "E-093",
+        "E-104"
+      ],
+      "challengingEvidenceRefs": [],
+      "requiredTests": []
+    },
+    {
+      "claimRef": "C-07",
+      "statement": "Degraded retrieval does not produce unsourced drafts.",
+      "domain": "resilience",
+      "critical": false,
+      "impact": "preserved",
+      "triggeredBy": [],
+      "path": [],
+      "invalidatedEvidenceRefs": [],
+      "preservedEvidenceRefs": [
+        "E-075"
+      ],
+      "challengingEvidenceRefs": [],
+      "requiredTests": []
+    },
+    {
+      "claimRef": "C-08",
+      "statement": "Case state is preserved across an unplanned restart.",
+      "domain": "resilience",
+      "critical": false,
+      "impact": "preserved",
+      "triggeredBy": [],
+      "path": [],
+      "invalidatedEvidenceRefs": [],
+      "preservedEvidenceRefs": [
+        "E-055"
+      ],
+      "challengingEvidenceRefs": [],
+      "requiredTests": []
+    },
+    {
+      "claimRef": "C-10",
+      "statement": "Customer data is processed only under the approved retention and residency terms.",
+      "domain": "cyber",
+      "critical": true,
+      "impact": "preserved",
+      "triggeredBy": [],
+      "path": [],
+      "invalidatedEvidenceRefs": [],
+      "preservedEvidenceRefs": [
+        "E-118",
+        "E-081"
+      ],
+      "challengingEvidenceRefs": [],
+      "requiredTests": []
+    },
+    {
+      "claimRef": "C-11",
+      "statement": "Retrieval sources are authorised, allowlisted and traceable to an owner.",
+      "domain": "cyber",
+      "critical": true,
+      "impact": "preserved",
+      "triggeredBy": [],
+      "path": [],
+      "invalidatedEvidenceRefs": [],
+      "preservedEvidenceRefs": [
+        "E-121"
+      ],
+      "challengingEvidenceRefs": [],
+      "requiredTests": []
+    },
+    {
+      "claimRef": "C-12",
+      "statement": "Untrusted retrieved content cannot become executable instruction.",
+      "domain": "cyber",
+      "critical": true,
+      "impact": "preserved",
+      "triggeredBy": [],
+      "path": [],
+      "invalidatedEvidenceRefs": [],
+      "preservedEvidenceRefs": [
+        "E-124"
+      ],
+      "challengingEvidenceRefs": [],
+      "requiredTests": []
+    },
+    {
+      "claimRef": "C-13",
+      "statement": "Agent memory has controlled writers, retention and rollback.",
+      "domain": "both",
+      "critical": false,
+      "impact": "preserved",
+      "triggeredBy": [],
+      "path": [],
+      "invalidatedEvidenceRefs": [],
+      "preservedEvidenceRefs": [
+        "E-127"
+      ],
+      "challengingEvidenceRefs": [],
+      "requiredTests": []
+    },
+    {
+      "claimRef": "C-14",
+      "statement": "Tool and MCP server descriptions are signed or allowlisted before use.",
+      "domain": "cyber",
+      "critical": true,
+      "impact": "preserved",
+      "triggeredBy": [],
+      "path": [],
+      "invalidatedEvidenceRefs": [],
+      "preservedEvidenceRefs": [
+        "E-130"
+      ],
+      "challengingEvidenceRefs": [],
+      "requiredTests": []
+    },
+    {
+      "claimRef": "C-09",
+      "statement": "The service meets its recovery time objective after a dependency failure.",
+      "domain": "resilience",
+      "critical": true,
+      "impact": "invalidated",
+      "triggeredBy": [
+        "recovery_objective",
+        "third_party_dependency"
+      ],
+      "path": [
+        "E-049 -[supports]-> C-09"
+      ],
+      "invalidatedEvidenceRefs": [
+        "E-049"
+      ],
+      "preservedEvidenceRefs": [],
+      "challengingEvidenceRefs": [],
+      "requiredTests": [
+        "recovery-objective-test"
+      ]
+    }
+  ],
+  "new_obligations": [
+    {
+      "testId": "restore-rehearsal",
+      "triggeredBy": "recovery_objective",
+      "reason": "Recovery objectives changed. No existing claim covers \"restore-rehearsal\"."
+    },
+    {
+      "testId": "dependency-failover-test",
+      "triggeredBy": "third_party_dependency",
+      "reason": "Third-party dependency \"retrieval-svc-eu\" added. No existing claim covers \"dependency-failover-test\"."
+    },
+    {
+      "testId": "degraded-mode-test",
+      "triggeredBy": "third_party_dependency",
+      "reason": "Third-party dependency \"retrieval-svc-eu\" added. No existing claim covers \"degraded-mode-test\"."
+    }
+  ],
+  "minimum_reassessment": [
+    {
+      "claim": "C-09",
+      "tests": [
+        "recovery-objective-test"
+      ]
+    },
+    {
+      "claim": "C-04",
+      "tests": [
+        "injection-challenge-pack"
+      ]
+    }
+  ],
+  "summary": {
+    "preserved": 12,
+    "affected": 0,
+    "invalidated": 1,
+    "unproven": 3,
+    "challenged": 1,
+    "evidencePreserved": 14,
+    "evidenceInvalidated": 1,
+    "reassessmentAvoided": 0.8571428571428571
+  },
+  "recommendation": {
+    "outcome": "supervised_pilot",
+    "rationale": "supervised pilot — Critical claim(s) without sufficient support, under the \"supervised_pilot\" policy. (rule R3.critical_claim_unsupported, claims C-09)",
+    "binding_rule": "R3.critical_claim_unsupported",
+    "rules_fired": [
+      {
+        "rule": "R3.critical_claim_unsupported",
+        "ceiling": "supervised_pilot",
+        "reason": "Critical claim(s) without sufficient support, under the \"supervised_pilot\" policy.",
+        "claimRefs": [
+          "C-09"
+        ]
+      }
+    ]
+  },
+  "permit_impact": {
+    "to": "suspended",
+    "trigger": "suspend_material_change",
+    "rationale": "1 critical claim(s) invalidated; operation must pause pending targeted reassessment."
+  }
+}

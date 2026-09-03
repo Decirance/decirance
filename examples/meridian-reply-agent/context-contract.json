@@ -1,0 +1,61 @@
+{
+  "schema_version": "0.1.0",
+  "contract_id": "ctx_meridian_casework",
+  "contract_version": "3.2.0",
+  "owner": "Ari Rios",
+  "purpose": "Triage inbound casework and draft responses for human review.",
+  "scope": {
+    "intended_users": [
+      "Customer operations caseworkers"
+    ],
+    "affected_parties": [
+      "Members of the public with an open case"
+    ],
+    "permitted_actions": [
+      "case:read",
+      "document:read",
+      "draft:create",
+      "review:request"
+    ],
+    "prohibited_actions": [
+      "message:send",
+      "case:close",
+      "payment:execute",
+      "case:write"
+    ],
+    "accessible_data": [
+      "case-store",
+      "document-store",
+      "internal:policy-library"
+    ],
+    "connected_tools": [
+      "case.read",
+      "document.read",
+      "response.draft",
+      "review.request"
+    ]
+  },
+  "operating": {
+    "autonomy_level": "assisted",
+    "required_human_oversight": [
+      "External send",
+      "Durable case update"
+    ],
+    "dependencies": [
+      "retrieval-svc",
+      "model-api"
+    ],
+    "recovery_objectives": {
+      "rto": "30m",
+      "rpo": "5m"
+    }
+  },
+  "risk": {
+    "appetite": "Low for irreversible customer-facing action; moderate for drafting.",
+    "stop_conditions": [
+      "Any unapproved outbound communication",
+      "Retrieval from an unlisted source",
+      "Two or more critical claims invalidated"
+    ]
+  }
+}

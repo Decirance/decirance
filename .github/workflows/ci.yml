@@ -1,0 +1,32 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Verify assurance properties
+        run: npm test
+
+      # The reference assessment is generated from the engine. If regenerating
+      # produces a diff, the published example no longer matches the code that
+      # claims to produce it — which is the specific way a reference assessment
+      # stops being trustworthy.
+      - name: Reference assessment is up to date
+        run: |
+          npm run build:examples
+          if ! git diff --exit-code --stat; then
+            echo "::error::examples/ and threat-library/ are stale. Run 'npm run build:examples' and commit the result."
+            exit 1
+          fi
