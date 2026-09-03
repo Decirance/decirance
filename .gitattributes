@@ -1,0 +1,10 @@
+# Normalise line endings in the repository.
+#
+# CI regenerates examples/ and fails on any diff. Without this, a contributor
+# on Windows commits CRLF, Linux CI regenerates LF, and the check fails on
+# invisible whitespace rather than on anything real.
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.woff2 binary

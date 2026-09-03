@@ -18,6 +18,7 @@
 
 import type { ClaimNode, EvidenceNode, GraphEdge, ObligationMap } from './invalidation';
 import type { PassportSnapshot } from './material-change';
+import { passportDigest, serialisePassport } from './passport-io';
 
 export const EXAMPLE_AGENT = {
   reference: 'AP-014',
@@ -98,6 +99,28 @@ export const EXAMPLE_PASSPORT_V4_POISONING: PassportSnapshot = {
   indexContentSources: [...EXAMPLE_PASSPORT_V3.indexContentSources, 'external:supplier-sharepoint'],
   mcpServers: [...EXAMPLE_PASSPORT_V3.mcpServers, 'mcp:supplier-lookup@0.4'],
 };
+
+/**
+ * Real digests, computed from the passports themselves.
+ *
+ * These were placeholder strings ("passport:v3"), which quietly undermined the
+ * central structural claim: that evidence is bound to the configuration it was
+ * collected against. A label is not a binding — anyone can write "passport:v3"
+ * next to evidence collected against something else. A canonical SHA-256 over
+ * the actual document cannot be written by hand.
+ */
+const digestFor = (snapshot: PassportSnapshot, version: string): string =>
+  passportDigest(serialisePassport(snapshot, {
+    agentId: 'agt_meridian_reply',
+    agentVersion: version,
+    owner: EXAMPLE_AGENT.owner,
+    purpose: 'Triage inbound casework and draft responses for human review.',
+  }));
+
+export const EXAMPLE_PASSPORT_HASHES = {
+  v3: digestFor(EXAMPLE_PASSPORT_V3, '3.0.0'),
+  v4: digestFor(EXAMPLE_PASSPORT_V4_CYBER, '4.0.0'),
+} as const;
 
 export const EXAMPLE_CLAIMS: ClaimNode[] = [
   {
@@ -226,112 +249,112 @@ export const EXAMPLE_EVIDENCE: ExampleEvidenceMeta[] = [
     ref: 'E-104', title: 'Context Contract v3.2',
     detail: 'Tool allow-list, purpose boundary, case scope',
     owner: 'AI Platform', collectedAt: '2026-06-18', sourceKind: 'attestation',
-    scopePassportHash: 'passport:v3',
+    scopePassportHash: EXAMPLE_PASSPORT_HASHES.v3,
     quality: { provenance: 95, coverage: 80, constructValidity: 75, ecologicalValidity: 70, repeatability: 90 },
   },
   {
     ref: 'E-098', title: 'Replay set / customer intents',
     detail: '1,240 reviewed conversations · 94.8% pass',
     owner: 'Trust Engineering', collectedAt: '2026-06-16', sourceKind: 'inspect_eval',
-    scopePassportHash: 'passport:v3',
+    scopePassportHash: EXAMPLE_PASSPORT_HASHES.v3,
     quality: { provenance: 90, coverage: 85, constructValidity: 70, ecologicalValidity: 80, repeatability: 85 },
   },
   {
     ref: 'E-093', title: 'Reviewer gate: external send',
     detail: 'Human approval required for outbound action',
     owner: 'CX Operations', collectedAt: '2026-06-12', sourceKind: 'control_test',
-    scopePassportHash: 'passport:v3',
+    scopePassportHash: EXAMPLE_PASSPORT_HASHES.v3,
     quality: { provenance: 95, coverage: 90, constructValidity: 85, ecologicalValidity: 85, repeatability: 80 },
   },
   {
     ref: 'E-087', title: 'Injection challenge pack',
     detail: '412 adversarial prompts · 96.1% surfaced',
     owner: 'Security Assurance', collectedAt: '2026-06-09', sourceKind: 'inspect_eval',
-    scopePassportHash: 'passport:v3',
+    scopePassportHash: EXAMPLE_PASSPORT_HASHES.v3,
     quality: { provenance: 90, coverage: 70, constructValidity: 80, ecologicalValidity: 55, repeatability: 75 },
   },
   {
     ref: 'E-081', title: 'PII redaction policy',
     detail: 'Tokenize before retrieval and generation',
     owner: 'Privacy Office', collectedAt: '2026-06-05', sourceKind: 'config_snapshot',
-    scopePassportHash: 'passport:v3',
+    scopePassportHash: EXAMPLE_PASSPORT_HASHES.v3,
     quality: { provenance: 90, coverage: 75, constructValidity: 70, ecologicalValidity: 65, repeatability: 95 },
   },
   {
     ref: 'E-075', title: 'Failover rehearsal / retrieval',
     detail: '18m degraded mode · no unsourced drafts',
     owner: 'SRE', collectedAt: '2026-05-29', sourceKind: 'resilience_test',
-    scopePassportHash: 'passport:v3',
+    scopePassportHash: EXAMPLE_PASSPORT_HASHES.v3,
     quality: { provenance: 85, coverage: 65, constructValidity: 75, ecologicalValidity: 90, repeatability: 60 },
   },
   {
     ref: 'E-069', title: 'Audit trail sample',
     detail: '100% tool and reviewer events correlated',
     owner: 'Platform Ops', collectedAt: '2026-05-22', sourceKind: 'runtime_log',
-    scopePassportHash: 'passport:v3',
+    scopePassportHash: EXAMPLE_PASSPORT_HASHES.v3,
     quality: { provenance: 95, coverage: 85, constructValidity: 80, ecologicalValidity: 95, repeatability: 85 },
   },
   {
     ref: 'E-061', title: 'Case access role matrix',
     detail: 'Read-only access mapped to case owner',
     owner: 'IAM', collectedAt: '2026-05-19', sourceKind: 'config_snapshot',
-    scopePassportHash: 'passport:v3',
+    scopePassportHash: EXAMPLE_PASSPORT_HASHES.v3,
     quality: { provenance: 95, coverage: 90, constructValidity: 85, ecologicalValidity: 75, repeatability: 95 },
   },
   {
     ref: 'E-055', title: 'Interrupt / resume test',
     detail: '40 runs · state preserved across restart',
     owner: 'SRE', collectedAt: '2026-05-14', sourceKind: 'resilience_test',
-    scopePassportHash: 'passport:v3',
+    scopePassportHash: EXAMPLE_PASSPORT_HASHES.v3,
     quality: { provenance: 85, coverage: 70, constructValidity: 75, ecologicalValidity: 80, repeatability: 90 },
   },
   {
     ref: 'E-049', title: 'Recovery objective rehearsal',
     detail: 'RTO 27m against a 30m objective',
     owner: 'SRE', collectedAt: '2026-05-11', sourceKind: 'resilience_test',
-    scopePassportHash: 'passport:v3',
+    scopePassportHash: EXAMPLE_PASSPORT_HASHES.v3,
     quality: { provenance: 85, coverage: 60, constructValidity: 80, ecologicalValidity: 85, repeatability: 65 },
   },
   {
     ref: 'E-118', title: 'Enterprise agreement / data terms',
     detail: 'No prompt retention · no training use · UK residency',
     owner: 'Procurement', collectedAt: '2026-06-20', sourceKind: 'contract_attestation',
-    scopePassportHash: 'passport:v3',
+    scopePassportHash: EXAMPLE_PASSPORT_HASHES.v3,
     quality: { provenance: 95, coverage: 85, constructValidity: 90, ecologicalValidity: 80, repeatability: 95 },
   },
   {
     ref: 'E-121', title: 'Retrieval source allowlist',
     detail: 'Two internal sources · owner recorded per source',
     owner: 'AI Platform', collectedAt: '2026-06-14', sourceKind: 'config_snapshot',
-    scopePassportHash: 'passport:v3',
+    scopePassportHash: EXAMPLE_PASSPORT_HASHES.v3,
     quality: { provenance: 95, coverage: 90, constructValidity: 85, ecologicalValidity: 80, repeatability: 95 },
   },
   {
     ref: 'E-124', title: 'RAG poisoning pack',
     detail: '180 planted documents · 97.2% refused as instruction',
     owner: 'Security Assurance', collectedAt: '2026-06-17', sourceKind: 'inspect_eval',
-    scopePassportHash: 'passport:v3',
+    scopePassportHash: EXAMPLE_PASSPORT_HASHES.v3,
     quality: { provenance: 90, coverage: 75, constructValidity: 85, ecologicalValidity: 65, repeatability: 80 },
   },
   {
     ref: 'E-127', title: 'Memory write control test',
     detail: 'Only the agent identity may write · 40 rollback runs passed',
     owner: 'Platform Ops', collectedAt: '2026-06-11', sourceKind: 'control_test',
-    scopePassportHash: 'passport:v3',
+    scopePassportHash: EXAMPLE_PASSPORT_HASHES.v3,
     quality: { provenance: 90, coverage: 80, constructValidity: 80, ecologicalValidity: 75, repeatability: 90 },
   },
   {
     ref: 'E-130', title: 'MCP manifest signatures',
     detail: '1 registered server · manifest signed and pinned to 1.2',
     owner: 'AI Platform', collectedAt: '2026-06-19', sourceKind: 'attestation',
-    scopePassportHash: 'passport:v3',
+    scopePassportHash: EXAMPLE_PASSPORT_HASHES.v3,
     quality: { provenance: 95, coverage: 85, constructValidity: 90, ecologicalValidity: 85, repeatability: 95 },
   },
   {
     ref: 'E-112', title: 'Adaptive injection finding',
     detail: 'Adaptive attack reached a draft tool call in 3 of 200 runs',
     owner: 'Security Assurance', collectedAt: '2026-06-24', sourceKind: 'inspect_eval',
-    scopePassportHash: 'passport:v3',
+    scopePassportHash: EXAMPLE_PASSPORT_HASHES.v3,
     quality: { provenance: 90, coverage: 55, constructValidity: 85, ecologicalValidity: 70, repeatability: 70 },
   },
 ];
@@ -398,8 +421,3 @@ export const EXAMPLE_OBLIGATIONS: ObligationMap = {
   data_source_added: ['retrieval-scope-test', 'content-scanning-check'],
   data_residency: ['residency-attestation', 'transfer-risk-assessment'],
 };
-
-export const EXAMPLE_PASSPORT_HASHES = {
-  v3: 'passport:v3',
-  v4: 'passport:v4',
-} as const;
