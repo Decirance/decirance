@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: Apache-2.0
 /**
  * Canonical serialisation and SHA-256 digests.
  *

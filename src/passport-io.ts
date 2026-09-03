@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: Apache-2.0
 /**
  * Agent Passport wire format — import and export.
  *

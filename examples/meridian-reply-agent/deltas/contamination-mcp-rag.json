@@ -373,6 +373,14 @@
         ]
       },
       {
+        "rule": "R2b.critical_claim_challenged_mitigated",
+        "ceiling": "approve_with_conditions",
+        "reason": "A critical claim is contradicted by evidence. Operation depends on the accepted compensating controls remaining in force.",
+        "claimRefs": [
+          "C-04"
+        ]
+      },
+      {
         "rule": "R6.non_critical_gap",
         "ceiling": "approve_with_conditions",
         "reason": "Non-critical claims require further evidence.",

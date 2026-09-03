@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: Apache-2.0
 /**
  * Classification of the difference between two Agent Passports.
  *

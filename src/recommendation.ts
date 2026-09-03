@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: Apache-2.0
 /**
  * Deployment recommendation. Specification section 10.3.
  *
@@ -162,6 +161,27 @@ export function recommend(input: RecommendationInput): RecommendationResult {
       reason:
         'A critical claim is contradicted by evidence and no mitigation has been accepted.',
       claimRefs: challenged.map((c) => c.ref),
+    });
+  }
+
+  // R2b - critical claim challenged, but a mitigation was accepted.
+  //
+  // Without this the case reports plain `approve` with the rationale "all
+  // mandatory claims are supported", which is false while a critical claim is
+  // contradicted. An accepted mitigation does not make the contradiction go
+  // away; it makes operation conditional on the compensating controls holding.
+  // Saying otherwise in an assurance pack is exactly the overstatement this
+  // engine exists to prevent.
+  const mitigated = assessable.filter(
+    (c) => c.critical && c.state === 'challenged' && c.mitigationAccepted,
+  );
+  if (mitigated.length > 0) {
+    fired.push({
+      rule: 'R2b.critical_claim_challenged_mitigated',
+      ceiling: 'approve_with_conditions',
+      reason:
+        'A critical claim is contradicted by evidence. Operation depends on the accepted compensating controls remaining in force.',
+      claimRefs: mitigated.map((c) => c.ref),
     });
   }
 

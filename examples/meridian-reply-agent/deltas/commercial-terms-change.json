@@ -297,6 +297,14 @@
         "claimRefs": [
           "C-10"
         ]
+      },
+      {
+        "rule": "R2b.critical_claim_challenged_mitigated",
+        "ceiling": "approve_with_conditions",
+        "reason": "A critical claim is contradicted by evidence. Operation depends on the accepted compensating controls remaining in force.",
+        "claimRefs": [
+          "C-04"
+        ]
       }
     ]
   },

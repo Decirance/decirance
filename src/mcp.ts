@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: Apache-2.0
 /**
  * MCP server inventory, fingerprinting and change detection.
  *
