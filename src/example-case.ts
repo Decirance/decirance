@@ -19,6 +19,7 @@
 import type { ClaimNode, EvidenceNode, GraphEdge, ObligationMap } from './invalidation';
 import type { PassportSnapshot } from './material-change';
 import { passportDigest, serialisePassport } from './passport-io';
+import type { AssuranceArgumentLayer } from './argument';
 
 export const EXAMPLE_AGENT = {
   reference: 'AP-014',
@@ -420,4 +421,133 @@ export const EXAMPLE_OBLIGATIONS: ObligationMap = {
   ],
   data_source_added: ['retrieval-scope-test', 'content-scanning-check'],
   data_residency: ['residency-attestation', 'transfer-risk-assessment'],
+};
+
+/**
+ * The argument layer for the reference case.
+ *
+ * Deliberately partial. Four of the fourteen claims carry an explicit argument;
+ * `claimsWithoutArgument` reports the rest, so the gap is visible rather than
+ * implied to be complete. A reference case that pretended to a full argument
+ * layer would misrepresent how much work an assurance case actually is.
+ */
+export const EXAMPLE_ARGUMENT_LAYER: AssuranceArgumentLayer = {
+  arguments: [
+    {
+      ref: 'A-01',
+      claimRef: 'C-01',
+      warrant:
+        'The agent holds no write permission, and the only route to durable change is a reviewer-gated task. With no write scope, the claim holds by construction rather than by observed behaviour.',
+      inference: 'deductive',
+      evidenceRefs: ['E-093', 'E-061'],
+      assumptionRefs: ['AS-01', 'AS-02'],
+    },
+    {
+      ref: 'A-04',
+      claimRef: 'C-04',
+      warrant:
+        '412 adversarial prompts were surfaced at 96.1%. The claim is generalised from those cases to inbound documents of the same kind.',
+      inference: 'inductive',
+      evidenceRefs: ['E-087'],
+      assumptionRefs: ['AS-03'],
+    },
+    {
+      ref: 'A-11',
+      claimRef: 'C-11',
+      warrant:
+        'The retrieval allowlist names two internal sources with recorded owners, and indexing configuration applies it before retrieval.',
+      inference: 'deductive',
+      evidenceRefs: ['E-121'],
+      assumptionRefs: ['AS-04'],
+    },
+    {
+      ref: 'A-14',
+      claimRef: 'C-14',
+      warrant:
+        'One MCP server is registered, its manifest is signed and pinned, and the fingerprint covers tool descriptions.',
+      inference: 'deductive',
+      evidenceRefs: ['E-130'],
+      assumptionRefs: ['AS-05'],
+    },
+  ],
+  assumptions: [
+    {
+      ref: 'AS-01',
+      statement: 'The reviewer gate cannot be bypassed by any tool the agent can reach.',
+      status: 'holds',
+      severedBy: ['tool_added', 'mcp_server_added', 'permission_granted'],
+      owner: 'CX Operations',
+    },
+    {
+      ref: 'AS-02',
+      statement: 'The agent operates under an identity distinct from any human reviewer.',
+      status: 'holds',
+      severedBy: ['identity_binding', 'account_binding'],
+      owner: 'IAM',
+    },
+    {
+      ref: 'AS-03',
+      statement:
+        'Inbound documents in production resemble the adversarial corpus in kind and distribution.',
+      status: 'unverified',
+      severedBy: ['data_source_added', 'index_content_source'],
+      owner: 'Security Assurance',
+    },
+    {
+      ref: 'AS-04',
+      statement: 'No component other than the indexer can add content to the retrieval corpus.',
+      status: 'holds',
+      severedBy: ['index_content_source', 'data_source_added'],
+      owner: 'AI Platform',
+    },
+    {
+      ref: 'AS-05',
+      statement: 'Only the platform team can register or modify an MCP server.',
+      status: 'holds',
+      severedBy: ['mcp_server_added', 'mcp_server_changed', 'identity_binding'],
+      owner: 'AI Platform',
+    },
+  ],
+  defeaters: [
+    {
+      ref: 'D-01',
+      kind: 'undercutting',
+      argumentRef: 'A-04',
+      statement:
+        'Adaptive attacks reached a draft tool call in 3 of 200 runs. The inference from a static corpus to production does not carry against an attacker who adapts.',
+      evidenceRefs: ['E-112'],
+      addressed: true,
+      response:
+        'Accepted as residual risk RR-01 against the outbound reviewer gate and a weekly challenge pack, recorded by the accountable owner.',
+    },
+    {
+      ref: 'D-02',
+      kind: 'undermining',
+      argumentRef: 'A-04',
+      statement:
+        'The injection pack was executed at ecological validity 55: a sandboxed environment rather than production-like.',
+      evidenceRefs: ['E-087'],
+      addressed: false,
+    },
+  ],
+  residualUncertainty: [
+    {
+      ref: 'RU-01',
+      claimRef: 'C-04',
+      statement:
+        'Injection techniques not represented in the corpus, and adaptive attacks beyond those tried, remain unmeasured.',
+      whyItRemains:
+        'No test set enumerates future attacks. The claim is bounded by what was tried, and the compensating control is the reviewer gate rather than the filter.',
+      acceptedBy: EXAMPLE_AGENT.owner,
+    },
+    {
+      ref: 'RU-02',
+      claimRef: 'C-01',
+      statement:
+        'The claim holds while no write permission exists. It says nothing about behaviour if one is granted.',
+      whyItRemains:
+        'A deductive argument from configuration is only as durable as the configuration. This is why the permit is bound to a passport digest.',
+      acceptedBy: EXAMPLE_AGENT.owner,
+    },
+  ],
 };

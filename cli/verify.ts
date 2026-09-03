@@ -10,7 +10,14 @@
  */
 
 import {
+  argumentIntegrity,
+  brokenAssumptions,
   checkContextCompatibility,
+  checkPermitInvariant,
+  claimsWithoutArgument,
+  verifyConfigurationBinding,
+  verifyNoAuthorityOutsideOperatingStates,
+  EXAMPLE_ARGUMENT_LAYER,
   computeDelta,
   diffMcpServers,
   diffPassports,
@@ -159,6 +166,57 @@ check('an unaltered attestation verifies', verifyAttestation(attestation),
 check('an altered attestation does not verify',
   !verifyAttestation({ ...attestation, decision: 'production' }),
   'Tamper evidence is the only integrity property this record claims.');
+
+
+console.log('\nPermit invariant');
+const noAuthority = verifyNoAuthorityOutsideOperatingStates();
+check('no non-operating permit state can authorise an action',
+  noAuthority.holds,
+  `States that wrongly authorised: ${noAuthority.violations.join(', ')}. This is the one property this project can actually decide rather than sample; a hole in it grants authority.`);
+
+const binding = verifyConfigurationBinding();
+check('a permit does not authorise a configuration it was not bound to',
+  binding.holds,
+  `States that authorised a mismatched configuration: ${binding.violations.join(', ')}. This is the property the whole product rests on.`);
+
+check('an action on both the permitted and prohibited lists is denied',
+  !checkPermitInvariant(
+    { reference: 'T', state: 'active', passportDigest: 'd', permittedActions: ['x'], prohibitedActions: ['x'], conditions: [] },
+    { action: 'x', currentPassportDigest: 'd' },
+  ).permitted,
+  'A contradictory permit must not grant. Prohibition is checked before permission for exactly this case.');
+
+check('an unknown running configuration denies rather than passes',
+  !checkPermitInvariant(
+    { reference: 'T', state: 'active', passportDigest: 'd', permittedActions: ['x'], prohibitedActions: [], conditions: [] },
+    { action: 'x', currentPassportDigest: '' },
+  ).permitted,
+  '"We could not determine what is running" must never authorise.');
+
+check('every failing clause is reported, not only the first',
+  checkPermitInvariant(
+    { reference: 'T', state: 'suspended', passportDigest: 'a', permittedActions: [], prohibitedActions: [], conditions: [{ ref: 'C1', mandatory: true, satisfied: false }] },
+    { action: 'y', currentPassportDigest: 'b' },
+  ).denials.length >= 4,
+  'A caller fixing one denial should be able to see the others in the same result.');
+
+console.log('\nArgument layer');
+const integrity = argumentIntegrity(EXAMPLE_ARGUMENT_LAYER);
+check('an unaddressed defeater stops its argument standing',
+  integrity.find((a) => a.argumentRef === 'A-04')?.standing === false,
+  'D-02 is an unaddressed undermining defeater on A-04. An argument with an open challenge does not stand.');
+
+check('an argument with sound assumptions stands',
+  integrity.find((a) => a.argumentRef === 'A-01')?.standing === true,
+  'A-01 rests on assumptions recorded as holding and carries no open defeater.');
+
+check('a change can break an assumption without touching any evidence',
+  brokenAssumptions(EXAMPLE_ARGUMENT_LAYER.assumptions, ['tool_added']).length > 0,
+  'This is the failure the argument layer exists to catch: every artefact still valid, and the reasoning they support no longer standing.');
+
+check('claims without an argument are reported rather than assumed complete',
+  claimsWithoutArgument(EXAMPLE_CLAIMS.map((c) => c.ref), EXAMPLE_ARGUMENT_LAYER).length > 0,
+  'The reference argument layer is deliberately partial. Pretending otherwise would misrepresent how much work an assurance case is.');
 
 console.log(`\n${failures === 0 ? 'All checks passed.' : `${failures} CHECK(S) FAILED.`}\n`);
 process.exitCode = failures === 0 ? 0 : 1;
