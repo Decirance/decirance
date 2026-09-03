@@ -5,7 +5,7 @@
   "agent_id": "agt_meridian_reply",
   "agent_version": "3.0.0",
   "context_version": "3.2.0",
-  "passport_digest": "fnv1a:0a0b161b",
+  "passport_digest": "sha256:06c840bef24fbc51ac854a7dc5d2df4c2491d6719a7a2feaae8a2697378945ba",
   "state": "active",
   "level": "conditional",
   "permitted_actions": [

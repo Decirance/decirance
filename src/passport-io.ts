@@ -13,6 +13,7 @@
  * system that is not the system described.
  */
 
+import { digestOf } from './digest';
 import type { PassportSnapshot } from './material-change';
 
 export const PASSPORT_SCHEMA_VERSION = '0.1.0';
@@ -278,37 +279,11 @@ export function serialisePassport(
 }
 
 /**
- * Stable digest over a passport document.
- *
- * Keys are sorted so that two semantically identical manifests written by
- * different tools produce the same hash — otherwise "has this changed?" would
- * be answered by key ordering rather than by content. The `digest` field
- * itself is excluded.
- *
- * FNV-1a is used because this module must stay dependency-free and run in a
- * browser. It is a content-addressing aid, not a security control: it detects
- * accidental drift, not deliberate tampering. Signed artefacts are what the
- * evidence receipt is for.
+ * Canonical SHA-256 digest over a passport document, excluding `digest`
+ * itself. Keys are sorted at every depth so two semantically identical
+ * manifests written by different tools agree — otherwise "has this changed?"
+ * would be answered by JSON key ordering rather than by content.
  */
 export function passportDigest(doc: PassportDocument): string {
-  const canonical = (value: unknown): unknown => {
-    if (Array.isArray(value)) return value.map(canonical);
-    if (isObject(value)) {
-      return Object.keys(value)
-        .filter((k) => k !== 'digest')
-        .sort()
-        .reduce<Record<string, unknown>>((acc, k) => {
-          acc[k] = canonical(value[k]);
-          return acc;
-        }, {});
-    }
-    return value;
-  };
-  const text = JSON.stringify(canonical(doc));
-  let hash = 0x811c9dc5;
-  for (let i = 0; i < text.length; i++) {
-    hash ^= text.charCodeAt(i);
-    hash = Math.imul(hash, 0x01000193) >>> 0;
-  }
-  return `fnv1a:${hash.toString(16).padStart(8, '0')}`;
+  return digestOf(doc, ['digest']);
 }

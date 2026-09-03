@@ -22,7 +22,7 @@
 
 import { fingerprintMcpServer, parseMcpConfig, type McpServer } from './mcp';
 import type { PassportSnapshot } from './material-change';
-import { digestOf } from './attestation';
+import { digestOf } from './digest';
 
 export interface ScanInput {
   /** Contents of an mcp.json or equivalent. */

@@ -1,3 +1,5 @@
+import { digestOf } from './digest';
+
 /**
  * Human attestation over a deployment decision.
  *
@@ -7,12 +9,12 @@
  * and conditions in front of them at the moment they signed. An approval that
  * floats free of its evidence is a signature on a blank page.
  *
- * IMPORTANT: `digest` is tamper-evident, not cryptographic. It detects a
- * changed record; it does not prove who produced it, and anyone able to write
- * the record can recompute it. Real non-repudiation needs a key the signer
- * controls and is deliberately out of scope here rather than faked — a
- * signature field that looks authoritative but is not would be worse than an
- * obviously provisional one.
+ * IMPORTANT: `digest` is a SHA-256 over the canonical record. It detects any
+ * alteration, but it is not a signature: it proves nothing about WHO produced
+ * the record, and anyone able to write one can recompute its digest.
+ * Non-repudiation needs a key the signer controls, which is out of scope here
+ * rather than faked — a field that looks authoritative and is not would be
+ * worse than an obviously provisional one.
  */
 
 export interface AttestationInput {
@@ -35,28 +37,6 @@ export interface Attestation extends AttestationInput {
   digest: string;
   /** Never true in this build. Present so callers cannot assume otherwise. */
   cryptographicallySigned: false;
-}
-
-function stableStringify(value: unknown): string {
-  if (Array.isArray(value)) return `[${value.map(stableStringify).join(',')}]`;
-  if (value && typeof value === 'object') {
-    const entries = Object.keys(value as Record<string, unknown>)
-      .sort()
-      .map((k) => `${JSON.stringify(k)}:${stableStringify((value as Record<string, unknown>)[k])}`);
-    return `{${entries.join(',')}}`;
-  }
-  return JSON.stringify(value);
-}
-
-/** FNV-1a. Content addressing, dependency-free, browser-safe. */
-export function digestOf(value: unknown): string {
-  const text = stableStringify(value);
-  let hash = 0x811c9dc5;
-  for (let i = 0; i < text.length; i++) {
-    hash ^= text.charCodeAt(i);
-    hash = Math.imul(hash, 0x01000193) >>> 0;
-  }
-  return `fnv1a:${hash.toString(16).padStart(8, '0')}`;
 }
 
 export function buildAttestation(input: AttestationInput): Attestation {

@@ -7,6 +7,7 @@
  * they must be usable without adopting the rest of the stack.
  */
 
+export * from './digest';
 export * from './material-change';
 export * from './invalidation';
 export * from './permit-state-machine';

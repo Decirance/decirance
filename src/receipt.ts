@@ -17,7 +17,7 @@
  * prove provenance and does not is worse than one that admits its limits.
  */
 
-import { digestOf } from './attestation';
+import { digestOf } from './digest';
 
 export interface EvidenceQuality {
   provenance: number;

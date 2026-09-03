@@ -16,7 +16,7 @@
  * own finding kind rather than folded into a generic "server changed".
  */
 
-import { digestOf } from './attestation';
+import { digestOf } from './digest';
 import type { MaterialChangeKind } from './material-change';
 
 export interface McpTool {

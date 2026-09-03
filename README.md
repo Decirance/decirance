@@ -44,8 +44,8 @@ are informative, values are not.
 | `cli/` | `decirance scan`, and the verification harness |
 | `examples/meridian-reply-agent/` | A complete, reproducible reference assessment |
 | `threat-library/` | Hazards and executable scenarios, mapped to NCSC guidance themes |
-| `framework-mappings/` | How claims map to published guidance |
-| `docs/` | Methodology and concepts |
+| `framework-mappings/` | [NCSC mapping](framework-mappings/ncsc.md); others planned |
+| `docs/` | [Methodology](docs/methodology.md), [quickstart](docs/quickstart.md) |
 
 ---
 
@@ -58,7 +58,7 @@ are informative, values are not.
 | **Assurance Claim** | A falsifiable statement that must hold for deployment |
 | **Evidence** | What supports or challenges each claim, and the configuration it was collected against |
 | **Assurance Graph** | Typed edges connecting hazards, claims, controls and evidence — each recording what severs it |
-| **Deployment Permit** | The human-signed, time-bounded authority to operate |
+| **Deployment Permit** | The human-authorised, time-bounded authority to operate |
 
 A Passport plus a Context Contract is the unit of assurance. Evidence is valid
 only for the pair it was collected against, which is enforced structurally
@@ -88,7 +88,7 @@ Detected change
 Three properties are deliberate:
 
 **Deterministic.** No model is consulted. The same inputs always produce the
-same output, because the result gates a permit a named human signs.
+same output, because the result gates a permit a named human authorises.
 
 **Fails closed.** A configuration difference the taxonomy cannot classify
 forces a full reassessment. Treating an unrecognised change as harmless is the
@@ -112,8 +112,8 @@ catch it.
 
 ```
 case-store
-  before fnv1a:62d71c23
-  after  fnv1a:b1098ab8  CHANGED
+  before sha256:9fd5cc6864caed12269597c491196460…
+  after  sha256:7ed4cb4c160fd172100982791d8040be…  CHANGED
   endpoint unchanged · version unchanged · scopes unchanged
 ```
 
@@ -143,7 +143,7 @@ Publishing limitations is part of the method.
 - A permit is bounded by its recorded context and says nothing outside it.
 - Runtime behaviour can diverge from tested behaviour.
 - Human approvers can approve badly. Decirance records the decision and its basis; it does not improve judgement.
-- Attestation and receipt digests are **tamper-evident, not cryptographic**. They detect an altered record; they do not prove authorship.
+- Attestation and receipt digests are **content-addressed SHA-256, not signatures**. They detect an altered record; they prove nothing about authorship. Cryptographic signing is on the roadmap.
 
 ---
 

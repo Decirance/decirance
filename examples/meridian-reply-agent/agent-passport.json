@@ -5,7 +5,7 @@
   "owner": "Ari Rios",
   "purpose": "Triage inbound casework and draft responses for human review.",
   "environment": "uk-south-prod",
-  "created_at": "2026-09-03T01:17:22.459Z",
+  "created_at": "2026-09-03T01:45:38.745Z",
   "components": {
     "model": {
       "provider": "anthropic",
@@ -83,5 +83,5 @@
     "data_residency": "uk",
     "expiry": "2027-03-31"
   },
-  "digest": "fnv1a:0a0b161b"
+  "digest": "sha256:06c840bef24fbc51ac854a7dc5d2df4c2491d6719a7a2feaae8a2697378945ba"
 }
