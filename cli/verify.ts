@@ -43,6 +43,11 @@ import {
   EXAMPLE_PASSPORT_V5_CONTAINMENT,
   deriveClaimState,
   type EvidenceIntegrity,
+  assessEnforcement,
+  assessContainment,
+  CONTAINMENT_SEQUENCE,
+  type EnforcementReceipt,
+  type ContainmentRun,
 } from '../src/index.ts';
 
 let failures = 0;
@@ -313,6 +318,87 @@ check('a containment change suspends the permit',
 check('the change generates evidence-integrity work, not only re-tests',
   containmentDelta.newObligations.some((o) => o.testId === 'evidence-integrity-review'),
   'A change of log plane does not invalidate the tests; it invalidates the record of them. The obligation differs and the plan must say so.');
+
+
+console.log('\nEnforcement receipts');
+
+const NOW = '2026-09-03T12:00:00.000Z';
+const liveReceipt: EnforcementReceipt = {
+  permitRef: 'DEC-2026-0001', conditionRef: 'K-01', target: 'agent-gateway',
+  externalPolicyId: 'AG-0042', policyDigest: 'sha256:aa', observedConfigDigest: 'sha256:aa',
+  acknowledgedAt: '2026-09-03T09:00:00.000Z', lastHeartbeatAt: '2026-09-03T11:58:00.000Z',
+  failureMode: 'fail_closed',
+};
+const conditions = [{ ref: 'K-01', mandatory: true }, { ref: 'K-02', mandatory: true }];
+
+check('a condition with no receipt is unenforced, never assumed satisfied',
+  assessEnforcement('DEC-2026-0001', conditions, [liveReceipt], { now: NOW })
+    .unenforcedConditions.includes('K-02'),
+  'Absence of evidence about enforcement is not evidence of enforcement. A condition nobody sent anywhere is a sentence in a document.');
+
+check('a permit is not fully enforced while any mandatory condition is unenforced',
+  !assessEnforcement('DEC-2026-0001', conditions, [liveReceipt], { now: NOW }).fullyEnforced,
+  '"Authorised" and "authorised and enforced" are different claims, and the second must never be inferred from the first.');
+
+check('an acknowledged policy running a different configuration reads as drifted, not enforced',
+  assessEnforcement('DEC-2026-0001', [{ ref: 'K-01', mandatory: true }],
+    [{ ...liveReceipt, observedConfigDigest: 'sha256:bb' }], { now: NOW })
+    .assessments[0].status === 'drifted',
+  'A live target running the wrong policy is a worse finding than a quiet one, and must not be hidden behind a healthy heartbeat.');
+
+check('a lapsed heartbeat is stale rather than enforced',
+  assessEnforcement('DEC-2026-0001', [{ ref: 'K-01', mandatory: true }],
+    [{ ...liveReceipt, lastHeartbeatAt: '2026-09-03T09:05:00.000Z' }], { now: NOW })
+    .assessments[0].status === 'stale',
+  'A control that stopped reporting three hours ago is not known to be enforcing anything.');
+
+check('a fail-open control that is not in force is reported as a permissive gap',
+  assessEnforcement('DEC-2026-0001', [{ ref: 'K-01', mandatory: true }],
+    [{ ...liveReceipt, lastHeartbeatAt: undefined, failureMode: 'fail_open' }], { now: NOW })
+    .permissiveGaps.includes('K-01'),
+  'A fail-open control that has lost its heartbeat is not merely unmonitored, it is permissive. That is worse than fail-closed in the same state and must be surfaced separately.');
+
+check('every mandatory condition enforced and reporting is fully enforced',
+  assessEnforcement('DEC-2026-0001', [{ ref: 'K-01', mandatory: true }], [liveReceipt], { now: NOW })
+    .fullyEnforced,
+  'The positive case must be reachable, or the distinction is theatre.');
+
+console.log('\nContainment');
+
+const fullRun: ContainmentRun = {
+  permitRef: 'DEC-2026-0001', trigger: 'egress containment invalidated',
+  startedAt: '2026-09-03T12:00:00.000Z', completedAt: '2026-09-03T12:04:12.000Z',
+  steps: CONTAINMENT_SEQUENCE.map((action) => ({
+    action, outcome: 'done' as const, verifiedBy: 'platform-security', at: NOW,
+  })),
+};
+check('a complete, verified run is contained',
+  assessContainment(fullRun).state === 'contained',
+  'The positive case must be reachable.');
+
+check('a step reported done with nothing verifying it does not count as contained',
+  assessContainment({
+    ...fullRun,
+    steps: fullRun.steps.map((s) =>
+      s.action === 'revoke_credentials' ? { ...s, verifiedBy: undefined } : s),
+  }).state === 'partial',
+  'Self-reported success is how an agent’s own infrastructure tells you it stopped the agent. That is exactly the evidence class this project distrusts elsewhere, and containment is not an exception.');
+
+check('skipping steps entirely leaves containment partial, not successful',
+  assessContainment({ ...fullRun, steps: [fullRun.steps[0]] }).state === 'partial',
+  'A suspension that stopped the scheduler and left credentials live has not contained anything.');
+
+check('a failed step makes the whole run failed',
+  assessContainment({
+    ...fullRun,
+    steps: fullRun.steps.map((s) =>
+      s.action === 'block_egress' ? { ...s, outcome: 'failed' as const } : s),
+  }).state === 'failed',
+  'One unrevoked path is enough. Containment does not average.');
+
+check('detection-to-containment time is measured',
+  (assessContainment(fullRun).elapsedMs ?? 0) > 0,
+  'The research questions require containment latency as a measured quantity, not an assertion.');
 
 console.log(`\n${failures === 0 ? 'All checks passed.' : `${failures} CHECK(S) FAILED.`}\n`);
 process.exitCode = failures === 0 ? 0 : 1;
