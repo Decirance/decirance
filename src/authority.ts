@@ -67,6 +67,15 @@ export interface AuthorityGrant {
   maxDelegationDepth: number;
   maxChildAgents: number;
   evidenceRefs: string[];
+  /**
+   * Lifecycle of the grant itself.
+   *
+   * A revoked parent must invalidate its children. Without this the delegation
+   * chain is checked once at creation and never again, so revoking the parent
+   * leaves every sub-agent it spawned holding authority derived from a grant
+   * that no longer exists.
+   */
+  status?: 'active' | 'expired' | 'revoked';
 }
 
 export interface DelegationFinding {
@@ -88,8 +97,10 @@ export function checkDelegation(
   child: AuthorityGrant,
   parent: AuthorityGrant | undefined,
   depth = 1,
+  options: { now?: string } = {},
 ): { valid: boolean; findings: DelegationFinding[] } {
   const findings: DelegationFinding[] = [];
+  const now = options.now ?? new Date().toISOString();
 
   if (!parent) {
     if (child.delegationParent) {
@@ -100,6 +111,37 @@ export function checkDelegation(
       });
     }
     return { valid: findings.length === 0, findings };
+  }
+
+  // Authority is derived, so it cannot outlive its source. Checked before the
+  // containment rules because a revoked parent makes the rest moot.
+  if (parent.status === 'revoked') {
+    findings.push({
+      code: 'parent_revoked',
+      severity: 'invalid',
+      detail: `Parent grant ${parent.ref} is revoked. Every authority derived from it falls with it; a child still operating is holding authority nobody grants.`,
+    });
+  }
+  if (parent.status === 'expired' || parent.grantExpiry < now) {
+    findings.push({
+      code: 'parent_expired',
+      severity: 'invalid',
+      detail: `Parent grant ${parent.ref} expired at ${parent.grantExpiry}. A child cannot be authorised by a grant that has lapsed.`,
+    });
+  }
+  if (child.grantExpiry > parent.grantExpiry) {
+    findings.push({
+      code: 'child_outlives_parent',
+      severity: 'invalid',
+      detail: `Child grant runs to ${child.grantExpiry}, beyond the parent's ${parent.grantExpiry}. Delegated authority cannot outlast its source.`,
+    });
+  }
+  if (!parent.actingFor) {
+    findings.push({
+      code: 'principal_unidentified',
+      severity: 'invalid',
+      detail: 'Delegated authority must identify the original accountable principal. "The agent did it" is not an audit trail.',
+    });
   }
 
   if (!parent.maySpawnSubAgents) {
@@ -179,6 +221,87 @@ export function checkDelegation(
   return { valid: !findings.some((f) => f.severity === 'invalid'), findings };
 }
 
+
+export interface ChainLink {
+  grant: AuthorityGrant;
+  findings: DelegationFinding[];
+  valid: boolean;
+}
+
+export interface ChainResult {
+  valid: boolean;
+  links: ChainLink[];
+  /** The first grant that broke containment, if any. */
+  firstInvalid?: string;
+  reasoning: string;
+}
+
+/**
+ * Validate a whole delegation chain, root first.
+ *
+ * A chain is only as good as its weakest link, and the failure this catches is
+ * a valid-looking leaf beneath an invalid intermediate: checking the leaf
+ * against its immediate parent says nothing about whether that parent was
+ * entitled to what it is passing on. Once a link breaks, everything below it
+ * is unauthorised regardless of how carefully it was narrowed.
+ */
+export function checkDelegationChain(
+  chain: AuthorityGrant[],
+  options: { now?: string } = {},
+): ChainResult {
+  const links: ChainLink[] = [];
+  let brokenAt: string | undefined;
+
+  chain.forEach((grant, i) => {
+    const parent = i === 0 ? undefined : chain[i - 1];
+    const { valid, findings } = checkDelegation(grant, parent, i, options);
+    const effectiveFindings = [...findings];
+    // Below a broken link, authority is not merely unchecked — it is absent.
+    if (brokenAt && valid) {
+      effectiveFindings.push({
+        code: 'inherits_broken_chain',
+        severity: 'invalid',
+        detail: `This grant is internally consistent but descends from ${brokenAt}, which is not valid. Authority cannot be derived from a grant that does not hold.`,
+      });
+    }
+    const linkValid = valid && !brokenAt;
+    if (!linkValid && !brokenAt) brokenAt = grant.ref;
+    links.push({ grant, findings: effectiveFindings, valid: linkValid });
+  });
+
+  return {
+    valid: !brokenAt,
+    links,
+    firstInvalid: brokenAt,
+    reasoning: brokenAt
+      ? `Chain breaks at ${brokenAt}. Every grant below it is unauthorised, however carefully it was narrowed.`
+      : `All ${chain.length} link(s) narrow correctly from the root principal.`,
+  };
+}
+
+/**
+ * Check several children of one parent independently.
+ *
+ * Reported per child rather than as a single verdict: one sibling violating
+ * containment must not invalidate the others, and a combined pass/fail would
+ * either hide the bad child or condemn the good ones.
+ */
+export function checkSiblings(
+  parent: AuthorityGrant,
+  children: AuthorityGrant[],
+  options: { now?: string } = {},
+): { allValid: boolean; results: Array<{ ref: string; valid: boolean; findings: DelegationFinding[] }>; overCount: boolean } {
+  const results = children.map((child) => {
+    const { valid, findings } = checkDelegation(child, parent, 1, options);
+    return { ref: child.ref, valid, findings };
+  });
+  return {
+    allValid: results.every((r) => r.valid),
+    results,
+    overCount: children.length > parent.maxChildAgents,
+  };
+}
+
 // ── Per-tool authority ─────────────────────────────────────────────────────
 
 export interface ToolAuthorityContract {
@@ -217,9 +340,19 @@ export interface ToolInvocation {
   resource?: string;
   dataClass?: string;
   recipient?: string;
+  destination?: string;
   parameters?: Record<string, unknown>;
   approvedBy?: string[];
   dryRun?: boolean;
+  /** Identity the call would actually run as. */
+  credentialIdentity?: string;
+  credentialLifetimeSeconds?: number;
+  /** Value of the action, where it has one. */
+  value?: number;
+  /** Calls already made in the current hour, for the rate limit. */
+  callsThisHour?: number;
+  elapsedSeconds?: number;
+  destructive?: boolean;
 }
 
 export interface ToolAuthorityResult {
@@ -272,6 +405,83 @@ export function checkToolAuthority(
     });
   }
 
+  if (invocation.destination && !contract.egressDestinations.includes(invocation.destination)) {
+    denials.push({
+      code: 'destination_not_allowed',
+      detail: `"${invocation.destination}" is not a permitted egress destination for ${contract.operationId}.`,
+    });
+  }
+
+  // Parameter constraints, expressed as simple comparisons so they stay
+  // readable in a permit a human has to sign.
+  for (const [name, rule] of Object.entries(contract.parameterConstraints)) {
+    const supplied = invocation.parameters?.[name];
+    if (supplied === undefined) continue;
+    const match = /^(<=|>=|<|>|==)\s*(.+)$/.exec(rule.trim());
+    if (!match) continue;
+    const [, op, raw] = match;
+    const expected = Number(raw);
+    const actual = Number(supplied);
+    if (Number.isNaN(expected) || Number.isNaN(actual)) continue;
+    const ok =
+      op === '<=' ? actual <= expected :
+      op === '>=' ? actual >= expected :
+      op === '<' ? actual < expected :
+      op === '>' ? actual > expected :
+      actual === expected;
+    if (!ok) {
+      denials.push({
+        code: 'parameter_constraint',
+        detail: `Parameter "${name}" is ${actual}; the contract requires ${rule}.`,
+      });
+    }
+  }
+
+  if (invocation.destructive && !contract.destructive) {
+    denials.push({
+      code: 'destructive_not_declared',
+      detail: `The call would change durable state, but ${contract.operationId} is not contracted as destructive. A contract that understates its effect cannot bound it.`,
+    });
+  }
+
+  if (contract.financialLimit !== undefined && (invocation.value ?? 0) > contract.financialLimit) {
+    denials.push({
+      code: 'financial_limit',
+      detail: `Value ${invocation.value} exceeds the contracted limit of ${contract.financialLimit}.`,
+    });
+  }
+
+  if (contract.rateLimitPerHour !== undefined && (invocation.callsThisHour ?? 0) >= contract.rateLimitPerHour) {
+    denials.push({
+      code: 'rate_limit',
+      detail: `${invocation.callsThisHour} call(s) this hour meets the contracted limit of ${contract.rateLimitPerHour}.`,
+    });
+  }
+
+  if (contract.timeLimitSeconds !== undefined && (invocation.elapsedSeconds ?? 0) > contract.timeLimitSeconds) {
+    denials.push({
+      code: 'time_limit',
+      detail: `Elapsed ${invocation.elapsedSeconds}s exceeds the contracted ${contract.timeLimitSeconds}s.`,
+    });
+  }
+
+  if (invocation.credentialIdentity && invocation.credentialIdentity !== contract.credentialIdentity) {
+    denials.push({
+      code: 'credential_identity',
+      detail: `Call would run as "${invocation.credentialIdentity}" but the contract binds ${contract.operationId} to "${contract.credentialIdentity}".`,
+    });
+  }
+
+  if (
+    invocation.credentialLifetimeSeconds !== undefined &&
+    invocation.credentialLifetimeSeconds > contract.credentialLifetimeSeconds
+  ) {
+    denials.push({
+      code: 'credential_lifetime',
+      detail: `Credential lives ${invocation.credentialLifetimeSeconds}s, beyond the contracted ${contract.credentialLifetimeSeconds}s.`,
+    });
+  }
+
   // Approval is required for the real call, not for a dry run — a dry run that
   // needed the same approval would just be the real call with extra steps.
   if (!invocation.dryRun) {
@@ -304,32 +514,148 @@ export function checkToolAuthority(
 }
 
 /**
- * Find exfiltration-shaped pairs across a contract set.
+ * Capability classes a contract can confer.
  *
- * A read of sensitive data plus a write to somewhere outside the organisation
- * is the shape, whoever wrote the two contracts and whether or not either
- * names the other. Reported rather than blocked: whether it is acceptable
- * depends on the context contract, and that is a human's call.
+ * Derived from the contract rather than declared, so a tool cannot avoid a
+ * composition warning by omitting a label.
+ */
+export type Capability =
+  | 'reads_sensitive'
+  | 'reads_identity'
+  | 'exports_data'
+  | 'retrieves_credentials'
+  | 'writes_external'
+  | 'sends_communication'
+  | 'writes_public_storage'
+  | 'makes_network_request'
+  | 'creates_child_agent'
+  | 'delegable_privileged';
+
+export interface CompositionalRisk {
+  pattern: string;
+  operations: [string, string];
+  /** Why the combination matters, beyond either half. */
+  whyItMatters: string;
+  /** The data or action the combination puts at risk. */
+  affects: string;
+  /** Controls already on either contract that bear on this path. */
+  mitigatingControls: string[];
+  /** Whether a human should look at this pairing. Never an automatic prohibition. */
+  requiresHumanReview: boolean;
+}
+
+function capabilitiesOf(c: ToolAuthorityContract): Set<Capability> {
+  const caps = new Set<Capability>();
+  const sensitive = c.permittedDataClasses.some((d) => d !== 'public');
+  const external = c.egressDestinations.some((d) => !d.endsWith('.internal'));
+  const ops = c.permittedActions.map((a) => a.toLowerCase());
+  const id = c.operationId.toLowerCase();
+
+  if (!c.destructive && sensitive) caps.add('reads_sensitive');
+  if (/identity|user|directory|people|hr/.test(id)) caps.add('reads_identity');
+  if (/export|download|dump|extract/.test(id) || ops.includes('export')) caps.add('exports_data');
+  if (/secret|credential|token|vault|key/.test(id)) caps.add('retrieves_credentials');
+  if (external) { caps.add('writes_external'); caps.add('makes_network_request'); }
+  if (/mail|message|send|notify|chat|post/.test(id) || ops.includes('send')) caps.add('sends_communication');
+  if (/public|bucket|blob|share|cdn/.test(id)) caps.add('writes_public_storage');
+  if (/spawn|child|subagent|sub_agent|delegate/.test(id)) caps.add('creates_child_agent');
+  if (c.destructive && sensitive) caps.add('delegable_privileged');
+  return caps;
+}
+
+/**
+ * The pairings worth surfacing.
+ *
+ * Each is a path that neither contract forbids on its own. The output is a
+ * warning, not a prohibition: whether the pairing is acceptable depends on the
+ * context contract and the compensating controls, and that judgement belongs
+ * to a person. Reporting it as "denied" would put this engine in the position
+ * of overruling a decision it does not have the context to make.
+ */
+const PATTERNS: Array<{
+  name: string;
+  from: Capability;
+  to: Capability;
+  whyItMatters: string;
+  affects: string;
+}> = [
+  {
+    name: 'sensitive read + external write',
+    from: 'reads_sensitive', to: 'writes_external',
+    whyItMatters: 'The canonical exfiltration primitive. Either half is ordinary; together they move protected data out of the organisation in one agent turn, with no rule broken.',
+    affects: 'Confidentiality of the data the reading tool can reach.',
+  },
+  {
+    name: 'identity lookup + communication',
+    from: 'reads_identity', to: 'sends_communication',
+    whyItMatters: 'Enables targeted social engineering under the organisation’s own identity. The agent can find who to approach and then approach them.',
+    affects: 'Named individuals, and the organisation’s standing with them.',
+  },
+  {
+    name: 'data export + public storage',
+    from: 'exports_data', to: 'writes_public_storage',
+    whyItMatters: 'Bulk disclosure without any network call an egress control would see, because the data leaves via a storage surface rather than a request.',
+    affects: 'Every record inside the export scope.',
+  },
+  {
+    name: 'credential retrieval + network request',
+    from: 'retrieves_credentials', to: 'makes_network_request',
+    whyItMatters: 'Turns a read of a secret into use of that secret elsewhere. This is the step that converted an evaluation sandbox escape into a multi-service intrusion in the 2026 incidents.',
+    affects: 'Every system the retrieved credential authenticates to, including ones outside this assessment.',
+  },
+  {
+    name: 'child creation + delegable privileged operation',
+    from: 'creates_child_agent', to: 'delegable_privileged',
+    whyItMatters: 'A privileged operation that can be delegated to spawned children escapes per-instance review: the reviewed agent is not the one acting.',
+    affects: 'The delegation chain, and any authority containment that assumed a fixed set of actors.',
+  },
+];
+
+function mitigationsOn(a: ToolAuthorityContract, b: ToolAuthorityContract): string[] {
+  const out: string[] = [];
+  for (const c of [a, b]) {
+    if (c.requiresTwoPersonApproval) out.push(`${c.operationId} requires two-person approval`);
+    else if (c.requiresHumanApproval) out.push(`${c.operationId} requires human approval`);
+    if (c.failMode === 'fail_closed') out.push(`${c.operationId} fails closed`);
+    if (c.rateLimitPerHour !== undefined) out.push(`${c.operationId} is rate-limited to ${c.rateLimitPerHour}/h`);
+    if (c.financialLimit !== undefined) out.push(`${c.operationId} is capped at ${c.financialLimit}`);
+    if (c.allowedRecipients.length > 0) out.push(`${c.operationId} restricts recipients`);
+  }
+  return [...new Set(out)];
+}
+
+/**
+ * Find compositional risks across a contract set.
+ *
+ * Individually safe tools compose into unsafe paths, and no single contract
+ * can see it: the risk is a property of the set, which is exactly the thing a
+ * per-tool review never looks at.
  */
 export function findCompositionalRisks(
   contracts: ToolAuthorityContract[],
-): Array<{ read: string; write: string; detail: string }> {
-  const readers = contracts.filter(
-    (c) => !c.destructive && c.permittedDataClasses.some((d) => d !== 'public'),
-  );
-  const writers = contracts.filter((c) => c.egressDestinations.length > 0 || c.destructive);
-  const out: Array<{ read: string; write: string; detail: string }> = [];
+): CompositionalRisk[] {
+  const caps = new Map(contracts.map((c) => [c.operationId, capabilitiesOf(c)]));
+  const out: CompositionalRisk[] = [];
 
-  for (const r of readers) {
-    for (const w of writers) {
-      if (r.operationId === w.operationId) continue;
-      const external = w.egressDestinations.filter((d) => !d.endsWith('.internal'));
-      if (external.length === 0) continue;
-      out.push({
-        read: r.operationId,
-        write: w.operationId,
-        detail: `${r.operationId} can read ${r.permittedDataClasses.join('/')} and ${w.operationId} can reach ${external.join(', ')}. Neither contract forbids the other, and together they are an exfiltration path.`,
-      });
+  for (const pattern of PATTERNS) {
+    for (const a of contracts) {
+      if (!caps.get(a.operationId)!.has(pattern.from)) continue;
+      for (const b of contracts) {
+        if (a.operationId === b.operationId) continue;
+        if (!caps.get(b.operationId)!.has(pattern.to)) continue;
+        const mitigating = mitigationsOn(a, b);
+        out.push({
+          pattern: pattern.name,
+          operations: [a.operationId, b.operationId],
+          whyItMatters: pattern.whyItMatters,
+          affects: pattern.affects,
+          mitigatingControls: mitigating,
+          // A pairing with no approval gate on the acting half is the one a
+          // human should see. Where an approval already stands between the
+          // capability and its use, the path is bounded and review is optional.
+          requiresHumanReview: !b.requiresHumanApproval && !b.requiresTwoPersonApproval,
+        });
+      }
     }
   }
   return out;

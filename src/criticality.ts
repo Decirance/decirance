@@ -57,6 +57,22 @@ export interface CriticalityFactors {
 
 export type CriticalityTier = 'T1_limited' | 'T2_standard' | 'T3_elevated' | 'T4_critical';
 
+/**
+ * Version of the classification policy.
+ *
+ * The tier is a *versioned policy-derived classification*, not a measurement.
+ * The weights and thresholds below are research hypotheses drawn from current
+ * guidance; no study validates them. Versioning them is what makes that honest
+ * rather than merely admitted: when calibration data arrives from design
+ * partners, the policy changes version and every prior classification remains
+ * interpretable against the rules that actually produced it.
+ */
+export const CRITICALITY_METHODOLOGY_VERSION = '0.1.0-research';
+
+export const CRITICALITY_LIMITATION =
+  'The initial thresholds are research hypotheses derived from current guidance. ' +
+  'They require calibration through design-partner deployments and observed outcomes.';
+
 export interface FactorContribution {
   factor: keyof CriticalityFactors;
   value: number;
@@ -64,10 +80,34 @@ export interface FactorContribution {
   contribution: number;
   /** Why this factor is weighted as it is. */
   note: string;
+  /** Why *this value* was selected, in the assessor's words. */
+  rationale?: string;
+}
+
+/**
+ * Who confirmed the input facts, and when.
+ *
+ * Recorded because the tier is only as good as the answers behind it. A
+ * classification with no named person behind its inputs is an assertion about
+ * an agent nobody looked at.
+ */
+export interface CriticalityProvenance {
+  /** Free-text rationale per factor. */
+  rationales?: Partial<Record<keyof CriticalityFactors, string>>;
+  confirmedBy?: string;
+  calculatedAt?: string;
 }
 
 export interface TierResult {
   tier: CriticalityTier;
+  /** The policy version that produced this tier. */
+  methodologyVersion: string;
+  /** The calculation rule, stated so the tier can be recomputed by hand. */
+  calculationRule: string;
+  confirmedBy?: string;
+  calculatedAt?: string;
+  /** Stated on every result, not buried in documentation. */
+  limitation: string;
   /** Shown only alongside `contributions`. Never on its own. */
   score: number;
   maximum: number;
@@ -123,13 +163,19 @@ const ESCALATIONS: Array<{
 
 const TIER_ORDER: CriticalityTier[] = ['T1_limited', 'T2_standard', 'T3_elevated', 'T4_critical'];
 
-export function assessCriticality(factors: CriticalityFactors): TierResult {
+export function assessCriticality(
+  factors: CriticalityFactors,
+  provenance: CriticalityProvenance = {},
+): TierResult {
   const contributions: FactorContribution[] = (
     Object.keys(WEIGHTS) as Array<keyof CriticalityFactors>
   ).map((factor) => {
     const { weight, note } = WEIGHTS[factor];
     const value = factors[factor];
-    return { factor, value, weight, contribution: value * weight, note };
+    return {
+      factor, value, weight, contribution: value * weight, note,
+      rationale: provenance.rationales?.[factor],
+    };
   });
 
   const score = contributions.reduce((n, c) => n + c.contribution, 0);
@@ -151,9 +197,21 @@ export function assessCriticality(factors: CriticalityFactors): TierResult {
     `Weighted score ${score} of ${maximum} (${Math.round(ratio * 100)}%).`,
     ...escalatingFactors.map((e) => `Raised to at least ${TIER_ORDER[TIER_ORDER.indexOf(tier)]}: ${e.reason}`),
     'The score is meaningless without the factors beside it. A tier that cannot be traced to specific answers is an unexplained rating.',
+    'Challenge an input factor rather than the tier. The tier is derived; editing it directly would discard the derivation that makes it reviewable.',
   ];
 
-  return { tier, score, maximum, contributions, escalatingFactors, reasoning };
+  return {
+    tier,
+    methodologyVersion: CRITICALITY_METHODOLOGY_VERSION,
+    calculationRule:
+      'Each factor (0-3) is multiplied by its weight and summed. The ratio to the maximum sets a band ' +
+      '(>=66% T4, >=45% T3, >=22% T2, else T1). Independent escalation rules may then raise the tier, ' +
+      'never lower it, so a severe factor cannot be averaged away by modest ones.',
+    confirmedBy: provenance.confirmedBy,
+    calculatedAt: provenance.calculatedAt,
+    limitation: CRITICALITY_LIMITATION,
+    score, maximum, contributions, escalatingFactors, reasoning,
+  };
 }
 
 // ── Proportionality gate ───────────────────────────────────────────────────

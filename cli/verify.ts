@@ -55,10 +55,27 @@ import {
   findCompositionalRisks,
   type AuthorityGrant,
   type ToolAuthorityContract,
+  checkDelegationChain,
+  checkSiblings,
 } from '../src/index.ts';
 
 let failures = 0;
+
+interface CheckRecord { name: string; passed: boolean; because: string; }
+const results: Array<{ property: string; checks: CheckRecord[] }> = [];
+let current = 'general';
+
+/** Start a group. Each group is an assurance property, not a folder. */
+function section(property: string): void {
+  current = property;
+  results.push({ property, checks: [] });
+  console.log('');
+  console.log(property);
+}
+
 function check(name: string, condition: boolean, because: string): void {
+  if (results.length === 0) results.push({ property: current, checks: [] });
+  results[results.length - 1].checks.push({ name, passed: condition, because });
   if (condition) {
     console.log(`  PASS  ${name}`);
   } else {
@@ -83,10 +100,10 @@ function delta(to: PassportSnapshot, unclassified: string[] = []) {
   });
 }
 
-console.log('\nDECIRANCE VERIFICATION');
+section('DECIRANCE VERIFICATION');
 console.log('='.repeat(72));
 
-console.log('\nDelta engine');
+section('Delta engine');
 const noChange = delta(EXAMPLE_PASSPORT_V3);
 check('no change preserves everything except standing contradictions',
   noChange.summary.invalidated === 0,
@@ -111,7 +128,7 @@ check('an unclassified change forces full reassessment',
   failClosed.fullReassessmentRequired && failClosed.summary.preserved === 0,
   'Treating an unrecognised change as harmless is the one failure this must never produce.');
 
-console.log('\nEvidence semantics');
+section('Evidence semantics');
 check('one artefact can be invalidated for one claim and preserved for another',
   cyber.outcomes.some((o) => o.invalidatedEvidenceRefs.includes('E-093')) &&
   cyber.outcomes.some((o) => o.preservedEvidenceRefs.includes('E-093')),
@@ -121,7 +138,7 @@ check('a surviving contradiction outranks surviving support',
   cyber.outcomes.find((o) => o.claimRef === 'C-04')?.impact === 'challenged',
   'A volume of weak support must not bury one credible contradictory result.');
 
-console.log('\nMCP fingerprinting');
+section('MCP fingerprinting');
 const before = EXAMPLE_MCP_SERVERS[0];
 const after = EXAMPLE_MCP_SERVERS_POISONED.find((s) => s.name === before.name)!;
 check('a description-only change moves the fingerprint',
@@ -138,7 +155,7 @@ check('a description change is its own finding kind',
   mcpFindings.some((f) => f.kind === 'tool_description_changed'),
   'Folding it into a generic server change loses the distinction that makes the delta useful.');
 
-console.log('\nContext compatibility');
+section('Context compatibility');
 const breach = checkContextCompatibility(EXAMPLE_PASSPORT_V4_CYBER, EXAMPLE_CONTEXT_CONTRACT);
 check('a prohibited capability is a breach, not a gap',
   breach.redLines.length > 0 && !breach.compatible,
@@ -148,7 +165,7 @@ check('the baseline passport sits inside its contract',
   checkContextCompatibility(EXAMPLE_PASSPORT_V3, EXAMPLE_CONTEXT_CONTRACT).compatible,
   'The reference case must start in a coherent state.');
 
-console.log('\nRecommendation rules');
+section('Recommendation rules');
 const rejected = recommend({
   claims: [{ ref: 'C-01', state: 'supported', critical: true }],
   redLines: breach.redLines,
@@ -161,7 +178,7 @@ check('an empty assurance case justifies nothing',
   recommend({ claims: [] }).recommendation === 'reject',
   'Defaulting to approve in the absence of evidence would invert the product premise.');
 
-console.log('\nPermit lifecycle');
+section('Permit lifecycle');
 check('an illegal transition is refused with alternatives',
   resolveTransition('suspended', 'approve').ok === false,
   'A suspended permit must not be reactivated by an approval trigger.');
@@ -170,7 +187,7 @@ check('a terminal state accepts nothing',
   resolveTransition('revoked', 'renew').ok === false,
   'Revoked authority must not be renewable in place.');
 
-console.log('\nAttestation');
+section('Attestation');
 const attestation = buildAttestation({
   permitRef: 'DP-TEST', passportDigest: 'sha256:0000', caseVersion: 'v1',
   recommendation: 'approve_with_conditions', decision: 'active',
@@ -185,7 +202,7 @@ check('an altered attestation does not verify',
   'Tamper evidence is the only integrity property this record claims.');
 
 
-console.log('\nPermit invariant');
+section('Permit invariant');
 const noAuthority = verifyNoAuthorityOutsideOperatingStates();
 check('no non-operating permit state can authorise an action',
   noAuthority.holds,
@@ -217,7 +234,7 @@ check('every failing clause is reported, not only the first',
   ).denials.length >= 4,
   'A caller fixing one denial should be able to see the others in the same result.');
 
-console.log('\nArgument layer');
+section('Argument layer');
 const integrity = argumentIntegrity(EXAMPLE_ARGUMENT_LAYER);
 check('an unaddressed defeater stops its argument standing',
   integrity.find((a) => a.argumentRef === 'A-04')?.standing === false,
@@ -236,7 +253,7 @@ check('claims without an argument are reported rather than assumed complete',
   'The reference argument layer is deliberately partial. Pretending otherwise would misrepresent how much work an assurance case is.');
 
 
-console.log('\nEvidence integrity');
+section('Evidence integrity');
 
 const sound: EvidenceIntegrity = {
   evidenceRef: 'E-T1', producer: 'Independent Assessor', producerIndependent: true,
@@ -281,7 +298,7 @@ check('a critical claim losing all admissible support is named',
   ).criticalClaimsUndermined.length === 1,
   'The failure mode is a claim that still looks supported by artefacts nobody can vouch for. It has to be named, not merely down-weighted.');
 
-console.log('\nContainment failure');
+section('Containment failure');
 
 const containmentDiff = diffPassports(EXAMPLE_PASSPORT_V3, EXAMPLE_PASSPORT_V5_CONTAINMENT);
 const containmentDelta = computeDelta({
@@ -327,7 +344,7 @@ check('the change generates evidence-integrity work, not only re-tests',
   'A change of log plane does not invalidate the tests; it invalidates the record of them. The obligation differs and the plan must say so.');
 
 
-console.log('\nEnforcement receipts');
+section('Enforcement receipts');
 
 const NOW = '2026-09-03T12:00:00.000Z';
 const liveReceipt: EnforcementReceipt = {
@@ -370,7 +387,7 @@ check('every mandatory condition enforced and reporting is fully enforced',
     .fullyEnforced,
   'The positive case must be reachable, or the distinction is theatre.');
 
-console.log('\nContainment');
+section('Containment');
 
 const fullRun: ContainmentRun = {
   permitRef: 'DEC-2026-0001', trigger: 'egress containment invalidated',
@@ -408,7 +425,7 @@ check('detection-to-containment time is measured',
   'The research questions require containment latency as a measured quantity, not an assertion.');
 
 
-console.log('\nProportionality and criticality');
+section('Proportionality and criticality');
 
 check('assurance cannot begin before the deployment is justified',
   !checkProportionality({ desiredOutcome: 'Draft replies faster' }).mayProceed,
@@ -447,7 +464,7 @@ check('the tier is always accompanied by its contributing factors',
   assessCriticality(modest).contributions.length === 10 && assessCriticality(modest).reasoning.length > 0,
   'A bare tier is the unexplained aggregate this product argues against. A number that hides its derivation is a trust score wearing a different hat.');
 
-console.log('\nAuthority and delegation');
+section('Authority and delegation');
 
 const parentGrant: AuthorityGrant = {
   ref: 'AG-01', agentIdentity: 'svc-meridian-reply', actingFor: 'org:meridian',
@@ -480,7 +497,7 @@ check('a child credential outliving its parent is flagged',
     credentialLifetimeSeconds: 86400 }, parentGrant).findings.some((f) => f.code === 'lifetime_extended'),
   'Revoking the parent would not stop the child, which defeats containment.');
 
-console.log('\nTool authority');
+section('Tool authority');
 
 const readContract: ToolAuthorityContract = {
   ref: 'TAC-01', provider: 'mcp:case-store@1.2', operationId: 'mcp:case-store@1.2/case.read',
@@ -521,5 +538,195 @@ check('read-sensitive plus write-external is reported as a compositional risk',
   findCompositionalRisks([readContract, sendContract]).length === 1,
   'Individually safe tools compose into unsafe paths. Read-a-document plus send-a-message is the canonical exfiltration primitive, and neither contract forbids the other.');
 
+
+section('Authority containment (lifecycle)');
+
+const T_NOW = '2026-09-03T00:00:00.000Z';
+const root: AuthorityGrant = {
+  ref: 'AG-ROOT', agentIdentity: 'svc-root', actingFor: 'user:a.reviewer',
+  mode: 'user_delegated', businessOwner: 'Casework', technicalOwner: 'AI Platform',
+  accountableSponsor: 'Director of Operations', purpose: 'Draft case replies',
+  permittedResources: ['case-store'], permittedActions: ['case:read', 'draft:create'],
+  prohibitedActions: ['case:delete'], identityProvider: 'entra', credentialType: 'oidc',
+  tokenAudience: 'api://case-store', scopes: ['case.read'], credentialLifetimeSeconds: 900,
+  grantStart: '2026-06-01', grantExpiry: '2027-03-31', maySpawnSubAgents: true,
+  maxDelegationDepth: 3, maxChildAgents: 2, evidenceRefs: ['E-143'], status: 'active',
+};
+const narrowed = (ref: string, over: Partial<AuthorityGrant> = {}): AuthorityGrant => ({
+  ...root, ref, delegationParent: root.ref, permittedActions: ['case:read'], scopes: [], ...over,
+});
+
+check('a revoked parent invalidates a dependent child grant',
+  !checkDelegation(narrowed('AG-C1'), { ...root, status: 'revoked' }, 1, { now: T_NOW }).valid,
+  'Authority is derived. If the source is revoked and the child keeps operating, it holds authority nobody grants — and revocation that does not reach sub-agents is not revocation.');
+
+check('an expired parent invalidates a dependent child grant',
+  !checkDelegation(narrowed('AG-C2'), { ...root, grantExpiry: '2026-08-01' }, 1, { now: T_NOW }).valid,
+  'A lapsed grant cannot authorise anything, including a child that looks otherwise correct.');
+
+check('a child grant cannot outlive its parent',
+  !checkDelegation(narrowed('AG-C3', { grantExpiry: '2028-01-01' }), root, 1, { now: T_NOW }).valid,
+  'Otherwise expiry of the parent silently leaves the child running with derived authority.');
+
+check('a three-level chain with an invalid intermediate fails, and names where',
+  (() => {
+    const mid = narrowed('AG-MID', { permittedActions: [...root.permittedActions, 'case:write'] });
+    const leaf = { ...narrowed('AG-LEAF'), delegationParent: 'AG-MID' };
+    const r = checkDelegationChain([root, mid, leaf], { now: T_NOW });
+    return !r.valid && r.firstInvalid === 'AG-MID';
+  })(),
+  'Checking a leaf against its immediate parent says nothing about whether that parent was entitled to what it passes on.');
+
+check('a leaf below a broken link is unauthorised even though it narrows correctly',
+  (() => {
+    const mid = narrowed('AG-MID2', { permittedActions: [...root.permittedActions, 'case:write'] });
+    const leaf = { ...narrowed('AG-LEAF2'), delegationParent: 'AG-MID2' };
+    const r = checkDelegationChain([root, mid, leaf], { now: T_NOW });
+    return r.links[2].valid === false
+      && r.links[2].findings.some((f) => f.code === 'inherits_broken_chain');
+  })(),
+  'Authority cannot be derived from a grant that does not hold, however carefully the child was narrowed.');
+
+check('one sibling violating containment does not invalidate the others',
+  (() => {
+    const good = narrowed('AG-S1');
+    const bad = narrowed('AG-S2', { permittedActions: ['case:read', 'case:delete'] });
+    const r = checkSiblings(root, [good, bad], { now: T_NOW });
+    return r.results.find((x) => x.ref === 'AG-S1')!.valid
+      && !r.results.find((x) => x.ref === 'AG-S2')!.valid
+      && !r.allValid;
+  })(),
+  'A combined verdict would either hide the bad child or condemn the good ones. Neither is a usable answer for an operator deciding what to stop.');
+
+section('Tool contract comparison');
+
+const base: ToolAuthorityContract = {
+  ref: 'TAC-B', provider: 'mcp:case-store@1.2', operationId: 'mcp:case-store@1.2/case.update',
+  toolVersion: '1.2', schemaVersion: '1', permittedActions: ['update'],
+  permittedResources: ['case-store'], parameterConstraints: { amount: '<= 500' },
+  permittedDataClasses: ['personal'], allowedRecipients: ['casework@meridian.gov.uk'],
+  egressDestinations: ['case-store.internal'], destructive: true, supportsDryRun: true,
+  requiresHumanApproval: true, requiresTwoPersonApproval: false, rateLimitPerHour: 20,
+  financialLimit: 500, timeLimitSeconds: 30, credentialIdentity: 'svc-meridian-reply',
+  credentialLifetimeSeconds: 900, failMode: 'fail_closed', prohibitedCombinations: [],
+};
+const ok = { operationId: base.operationId, resource: 'case-store', dataClass: 'personal',
+  recipient: 'casework@meridian.gov.uk', destination: 'case-store.internal',
+  approvedBy: ['reviewer'], credentialIdentity: 'svc-meridian-reply' };
+
+check('a compliant invocation is permitted',
+  checkToolAuthority(ok, [base]).permitted,
+  'The permitted case must be reachable or the contract is unusable.');
+
+check('a parameter outside its constraint is denied',
+  !checkToolAuthority({ ...ok, parameters: { amount: 900 } }, [base]).permitted,
+  'A contract that states a limit and does not enforce it is documentation.');
+
+check('an egress destination outside the contract is denied',
+  !checkToolAuthority({ ...ok, destination: 'attacker.example.com' }, [base]).permitted,
+  'Egress is the boundary the contract exists to hold.');
+
+check('running as a different credential identity is denied',
+  !checkToolAuthority({ ...ok, credentialIdentity: 'svc-admin' }, [base]).permitted,
+  'A contract bound to one identity and executed as another is a confused deputy.');
+
+check('a credential outliving the contracted lifetime is denied',
+  !checkToolAuthority({ ...ok, credentialLifetimeSeconds: 86400 }, [base]).permitted,
+  'Short-lived credentials are a control only if the lifetime is checked.');
+
+check('exceeding the financial limit is denied',
+  !checkToolAuthority({ ...ok, value: 5000 }, [base]).permitted,
+  'A financial ceiling nobody compares against is not a ceiling.');
+
+check('exceeding the hourly rate limit is denied',
+  !checkToolAuthority({ ...ok, callsThisHour: 20 }, [base]).permitted,
+  'Rate limits bound how much damage occurs before a human notices.');
+
+section('Compositional risk');
+
+const mk = (over: Partial<ToolAuthorityContract>): ToolAuthorityContract => ({
+  ...base, requiresHumanApproval: false, destructive: false, financialLimit: undefined,
+  rateLimitPerHour: undefined, parameterConstraints: {}, ...over,
+});
+const sensitiveRead = mk({ ref: 'C1', operationId: 'mcp:case-store@1.2/case.read', permittedDataClasses: ['personal'], egressDestinations: [] });
+const externalWrite = mk({ ref: 'C2', operationId: 'mcp:mail@2.0/message.send', egressDestinations: ['smtp.external.net'] });
+const identityRead = mk({ ref: 'C3', operationId: 'mcp:directory@1.0/user.lookup', permittedDataClasses: ['personal'], egressDestinations: [] });
+const exporter = mk({ ref: 'C4', operationId: 'mcp:reports@1.0/case.export', permittedDataClasses: ['personal'], egressDestinations: [] });
+const publicStore = mk({ ref: 'C5', operationId: 'mcp:blob@1.0/public.bucket.put', egressDestinations: ['cdn.example.net'] });
+const secretRead = mk({ ref: 'C6', operationId: 'mcp:vault@1.0/secret.get', permittedDataClasses: ['secret'], egressDestinations: [] });
+const httpCall = mk({ ref: 'C7', operationId: 'mcp:http@1.0/request.send', egressDestinations: ['api.external.net'] });
+const spawner = mk({ ref: 'C8', operationId: 'mcp:orchestrator@1.0/child.spawn', egressDestinations: [] });
+const privileged = mk({ ref: 'C9', operationId: 'mcp:case-store@1.2/case.purge', destructive: true, permittedDataClasses: ['personal'], egressDestinations: [] });
+
+const patternsFound = (cs: ToolAuthorityContract[], name: string) =>
+  findCompositionalRisks(cs).some((r) => r.pattern === name);
+
+check('sensitive read + external write is detected',
+  patternsFound([sensitiveRead, externalWrite], 'sensitive read + external write'),
+  'The canonical exfiltration primitive. Neither contract forbids the other.');
+
+check('identity lookup + communication is detected',
+  patternsFound([identityRead, externalWrite], 'identity lookup + communication'),
+  'Enables targeted social engineering under the organisation’s own identity.');
+
+check('data export + public storage is detected',
+  patternsFound([exporter, publicStore], 'data export + public storage'),
+  'Bulk disclosure that leaves via a storage surface, which an egress control watching requests never sees.');
+
+check('credential retrieval + network request is detected',
+  patternsFound([secretRead, httpCall], 'credential retrieval + network request'),
+  'This is the step that turned a sandbox escape into a multi-service intrusion in the 2026 incidents.');
+
+check('child creation + delegable privileged operation is detected',
+  patternsFound([spawner, privileged], 'child creation + delegable privileged operation'),
+  'A privileged operation delegable to spawned children escapes per-instance review: the reviewed agent is not the one acting.');
+
+check('a compositional risk explains itself rather than only flagging',
+  (() => {
+    const r = findCompositionalRisks([sensitiveRead, externalWrite])[0];
+    return !!r.whyItMatters && !!r.affects && Array.isArray(r.mitigatingControls);
+  })(),
+  'A warning that names a pair without saying what it puts at risk cannot be acted on.');
+
+check('an approval gate on the acting half removes the need for review',
+  !findCompositionalRisks([sensitiveRead, { ...externalWrite, requiresHumanApproval: true }])
+    .find((r) => r.pattern === 'sensitive read + external write')!.requiresHumanReview,
+  'Where an approval already stands between the capability and its use, the path is bounded. Flagging it anyway trains people to ignore the flag.');
+
+check('a compositional risk is reported, never auto-prohibited',
+  checkToolAuthority({ operationId: sensitiveRead.operationId, resource: 'case-store',
+    dataClass: 'personal' }, [sensitiveRead, externalWrite]).permitted,
+  'Whether a pairing is acceptable depends on the context contract and compensating controls. That judgement belongs to a person, not to this engine.');
+
 console.log(`\n${failures === 0 ? 'All checks passed.' : `${failures} CHECK(S) FAILED.`}\n`);
 process.exitCode = failures === 0 ? 0 : 1;
+
+// `--json <path>` publishes the grouped result for the demonstrator's evidence
+// panel, so what the site claims about its own testing is generated from the
+// run rather than typed by hand and left to drift.
+const jsonIndex = process.argv.indexOf('--json');
+if (jsonIndex >= 0) {
+  const { writeFileSync, mkdirSync } = await import('node:fs');
+  const { dirname, resolve } = await import('node:path');
+  const { execSync } = await import('node:child_process');
+  let commit = 'unknown';
+  try { commit = execSync('git rev-parse --short HEAD').toString().trim(); } catch { /* not a repo */ }
+  const out = resolve(process.argv[jsonIndex + 1] ?? 'check-summary.json');
+  mkdirSync(dirname(out), { recursive: true });
+  writeFileSync(out, JSON.stringify({
+    generatedAt: new Date().toISOString(),
+    commit,
+    total: results.reduce((n, g) => n + g.checks.length, 0),
+    failures,
+    properties: results
+      .filter((g) => g.checks.length > 0)
+      .map((g) => ({
+        property: g.property,
+        passed: g.checks.filter((c) => c.passed).length,
+        total: g.checks.length,
+        checks: g.checks.map((c) => ({ name: c.name, passed: c.passed })),
+      })),
+  }, null, 2) + String.fromCharCode(10));
+  console.log('Wrote ' + out);
+}
+
