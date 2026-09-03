@@ -122,13 +122,30 @@ export function scanForReadiness(input: ScanInput): ReadinessReport {
   // --- MCP inventory -------------------------------------------------------
   const mcp = input.mcpConfig
     ? parseMcpConfig(input.mcpConfig)
-    : { servers: [], warnings: [], unknownFields: [] };
+    : { servers: [], warnings: [], unknownFields: [], readable: true };
   const mcpServers = mcp.servers.map((s) => ({ ...s, fingerprint: fingerprintMcpServer(s) }));
 
   if (!input.mcpConfig) {
     fields.push({ field: 'MCP servers', status: 'unverifiable', note: 'No configuration supplied. Whether the agent uses MCP is unknown, not none.' });
+  } else if (!mcp.readable) {
+    // Unreadable is not "none". Reporting a parse failure as "declares no
+    // servers" made malformed input improve the verdict — the blocking gap for
+    // unapproved servers vanished along with the servers — which is precisely
+    // the failure this scan exists to catch.
+    fields.push({
+      field: 'MCP servers',
+      status: 'unverifiable',
+      note: `Configuration supplied but could not be parsed: ${mcp.warnings[0] ?? 'unreadable'}. Whether the agent uses MCP is unknown, not none.`,
+    });
+    gaps.push({
+      ref: 'G-MCP-PARSE',
+      severity: 'blocking',
+      title: 'MCP configuration could not be read',
+      why: 'An unreadable configuration hides the tool and description surface entirely. Nothing can be concluded about MCP exposure, and an absent conclusion must never be recorded as an absent risk.',
+      action: 'Correct the configuration so it parses, then run the scan again.',
+    });
   } else if (mcpServers.length === 0) {
-    fields.push({ field: 'MCP servers', status: 'missing', note: 'Configuration supplied but declares no servers.' });
+    fields.push({ field: 'MCP servers', status: 'missing', note: 'Configuration supplied and read; it declares no servers.' });
   } else {
     fields.push({ field: 'MCP servers', status: 'detected', value: mcpServers.map((s) => s.name).join(', ') });
     recommendedTests.add('mcp-manifest-signature-check');

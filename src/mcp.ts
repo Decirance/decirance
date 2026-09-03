@@ -78,6 +78,15 @@ export interface McpParseResult {
   servers: McpServer[];
   warnings: string[];
   unknownFields: string[];
+  /**
+   * Whether the document could be read at all.
+   *
+   * Distinct from "read it, and it declares no servers". Collapsing the two
+   * lets unreadable input present as an agent with no MCP surface, so a
+   * malformed paste scores better than a valid one — which inverts the whole
+   * point of the scan.
+   */
+  readable: boolean;
 }
 
 function isObject(v: unknown): v is Record<string, unknown> {
@@ -104,11 +113,11 @@ export function parseMcpConfig(input: unknown): McpParseResult {
     try {
       raw = JSON.parse(input);
     } catch (e) {
-      return { servers: [], warnings: [`Not valid JSON: ${(e as Error).message}`], unknownFields: [] };
+      return { servers: [], warnings: [`Not valid JSON: ${(e as Error).message}`], unknownFields: [], readable: false };
     }
   }
   if (!isObject(raw)) {
-    return { servers: [], warnings: ['Expected a JSON object.'], unknownFields: [] };
+    return { servers: [], warnings: ['Expected a JSON object.'], unknownFields: [], readable: false };
   }
 
   const container = isObject(raw.mcpServers)
@@ -168,7 +177,7 @@ export function parseMcpConfig(input: unknown): McpParseResult {
   }
 
   if (servers.length === 0) warnings.push('No MCP servers found in this configuration.');
-  return { servers, warnings, unknownFields };
+  return { servers, warnings, unknownFields, readable: true };
 }
 
 export type McpFindingKind =
