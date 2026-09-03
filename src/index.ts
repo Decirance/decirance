@@ -17,6 +17,7 @@ export * from './inspect-adapter';
 export * from './passport-io';
 export * from './attestation';
 export * from './scenario-pack';
+export * from './field-guide';
 export * from './context-contract';
 export * from './receipt';
 export * from './mcp';
