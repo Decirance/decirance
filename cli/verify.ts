@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /**
  * Verification harness.
  *
@@ -147,7 +148,7 @@ check('a terminal state accepts nothing',
 
 console.log('\nAttestation');
 const attestation = buildAttestation({
-  permitRef: 'DP-TEST', passportDigest: 'fnv1a:0000', caseVersion: 'v1',
+  permitRef: 'DP-TEST', passportDigest: 'sha256:0000', caseVersion: 'v1',
   recommendation: 'approve_with_conditions', decision: 'active',
   conditions: ['Human approval before external send'], residualRisksAccepted: ['RR-02'],
   actor: 'Ari Rios', role: 'Accountable owner', at: '2026-09-03T00:00:00.000Z',

@@ -1,3 +1,4 @@
+<!-- SPDX-License-Identifier: CC-BY-4.0 -->
 # Decirance Agent Assurance Methodology
 
 **Version 0.1 · September 2026**

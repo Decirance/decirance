@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /**
  * UK AISI Inspect evaluation adapter.
  *

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /**
  * Context Contract — the conditions under which an agent is *intended* to
  * operate, and the check that the deployed configuration stays inside them.

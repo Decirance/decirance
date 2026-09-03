@@ -1,3 +1,4 @@
+<!-- SPDX-License-Identifier: CC-BY-4.0 -->
 # NCSC mapping
 
 **Sources:** NCSC guidance on managing the cyber risk of agentic AI; UK AI

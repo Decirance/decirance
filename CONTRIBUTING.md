@@ -50,4 +50,34 @@ bump and a note in `ROADMAP.md`. Additive optional fields are not breaking.
 Explain *why* in the commit message, not what — the diff already says what.
 Where a decision has a trade-off, record the trade-off.
 
-By contributing you agree your contribution is licensed under Apache 2.0.
+## Sign your work (DCO)
+
+Contributions are certified with a
+[Developer Certificate of Origin](https://developercertificate.org/) sign-off
+rather than a contributor licence agreement. A DCO is a statement that you have
+the right to submit the work; a CLA asks you to assign rights, which is a
+heavier ask than this project needs.
+
+Add a sign-off line to each commit:
+
+```bash
+git commit -s -m "your message"
+```
+
+which appends:
+
+```text
+Signed-off-by: Your Name <your.email@example.com>
+```
+
+Use your real name and an address you can be reached at. CI checks that every
+commit in a pull request carries one.
+
+By signing off you certify that your contribution is licensed under **Apache
+2.0** for code, schemas and machine-readable content, and under **CC BY 4.0**
+for documentation. See [LICENSING.md](LICENSING.md).
+
+## Trademarks
+
+The licences cover copyright and patents, not the Decirance name or logo. A
+fork is welcome and should carry its own name. See [TRADEMARKS.md](TRADEMARKS.md).

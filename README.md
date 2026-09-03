@@ -165,4 +165,30 @@ If you think a `severedBy` list in the reference assessment is wrong, open an
 issue — that is the claim the whole method rests on. See
 [CONTRIBUTING.md](CONTRIBUTING.md).
 
-Licensed under [Apache 2.0](LICENSE).
+## Licensing
+
+Decirance is **open core**, and the boundary is stated rather than implied.
+
+| | |
+|---|---|
+| Code, schemas, taxonomies, adapters, examples | [Apache 2.0](LICENSES/Apache-2.0.txt) |
+| Methodology and documentation in `/docs` | [CC BY 4.0](LICENSES/CC-BY-4.0.txt) |
+| The Decirance name and logo | Not licensed — see [TRADEMARKS.md](TRADEMARKS.md) |
+| The hosted platform | Commercial, and not in this repository |
+
+Full detail in [LICENSING.md](LICENSING.md).
+
+Apache 2.0 for code because an organisation integrating this into its own
+security or governance systems must not inherit licensing obligations across
+them, and because the explicit patent grant is what enterprise legal review
+actually asks about. CC BY 4.0 for documentation so a department, university or
+trainer can copy the methodology into internal policy, adapt it and translate
+it, with attribution.
+
+Saying "Decirance is open source" without the boundary would imply the whole
+product is here. It is not — the managed platform, evidence registry, access
+control, signing service, connectors and sector packs are commercial.
+
+Contributions are certified by a [Developer Certificate of
+Origin](https://developercertificate.org/) sign-off (`git commit -s`), not a
+CLA. See [CONTRIBUTING.md](CONTRIBUTING.md).

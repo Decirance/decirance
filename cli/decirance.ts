@@ -1,4 +1,5 @@
 #!/usr/bin/env -S npx tsx
+// SPDX-License-Identifier: Apache-2.0
 /**
  * decirance — command line entry point.
  *

@@ -1,3 +1,4 @@
+<!-- SPDX-License-Identifier: CC-BY-4.0 -->
 # Framework mappings
 
 How Decirance claims map to published guidance. The point is to show that this

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /**
  * Hazards and test scenarios, mapped to NCSC agentic-AI guidance themes.
  *

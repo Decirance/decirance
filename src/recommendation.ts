@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /**
  * Deployment recommendation. Specification section 10.3.
  *
