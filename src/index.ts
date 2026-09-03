@@ -18,6 +18,7 @@ export * from './passport-io';
 export * from './attestation';
 export * from './scenario-pack';
 export * from './field-guide';
+export * from './evidence-integrity'
 export * from './argument';
 export * from './permit-invariant';
 export * from './context-contract';

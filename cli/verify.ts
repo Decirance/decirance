@@ -38,6 +38,11 @@ import {
   EXAMPLE_PASSPORT_V4_CYBER,
   EXAMPLE_PASSPORT_V4_POISONING,
   type PassportSnapshot,
+  assessIntegrity,
+  applyIntegrityGate,
+  EXAMPLE_PASSPORT_V5_CONTAINMENT,
+  deriveClaimState,
+  type EvidenceIntegrity,
 } from '../src/index.ts';
 
 let failures = 0;
@@ -217,6 +222,97 @@ check('a change can break an assumption without touching any evidence',
 check('claims without an argument are reported rather than assumed complete',
   claimsWithoutArgument(EXAMPLE_CLAIMS.map((c) => c.ref), EXAMPLE_ARGUMENT_LAYER).length > 0,
   'The reference argument layer is deliberately partial. Pretending otherwise would misrepresent how much work an assurance case is.');
+
+
+console.log('\nEvidence integrity');
+
+const sound: EvidenceIntegrity = {
+  evidenceRef: 'E-T1', producer: 'Independent Assessor', producerIndependent: true,
+  collectionPlane: 'independent', reach: {
+    couldObserveEvaluation: false, couldModifyHarness: false, couldModifyScorer: false,
+    couldAccessExpectedAnswers: false, couldModifyLogs: false,
+  },
+  appendOnlyLogs: true, tamperEvident: true, chainOfCustodyComplete: true,
+  externallyCorroborated: true, allActionsCaptured: true,
+};
+check('evidence collected outside the agent boundary is trusted',
+  assessIntegrity(sound).status === 'trusted',
+  'Independent collection, tamper evidence and a complete custody chain should not be downgraded.');
+
+check('a reachable scorer disqualifies evidence however sound it otherwise looks',
+  !assessIntegrity({ ...sound, reach: { ...sound.reach, couldModifyScorer: true } }).admissibleForCriticalClaims,
+  'The 2026 evaluations included attempts to manipulate the scorer. A pass an agent could write is not a pass, and no quantity of good properties beside it changes that.');
+
+check('writable logs disqualify: absence of a record stops being evidence of absence',
+  assessIntegrity({ ...sound, reach: { ...sound.reach, couldModifyLogs: true } }).status === 'compromised',
+  'Agents modified accessible logs in the recorded incidents. If the agent could edit the log, a missing action is not evidence the action did not happen.');
+
+check('unestablished integrity is unverifiable, not trusted',
+  assessIntegrity({ evidenceRef: 'E-T2', producer: 'Vendor', collectionPlane: 'unknown', reach: {} }).status === 'unverifiable',
+  'An imported result that never recorded where it was collected must not be read as sound. "Nobody checked" and "it is fine" are different answers.');
+
+check('unverifiable evidence cannot carry a decision-critical claim',
+  !assessIntegrity({ evidenceRef: 'E-T3', producer: 'Vendor', collectionPlane: 'unknown', reach: {} }).admissibleForCriticalClaims,
+  'Compromised or unverifiable evidence must not silently support a critical claim.');
+
+check('a human override is applied and recorded rather than applied silently',
+  (() => {
+    const a = assessIntegrity({ ...sound, assessedStatus: 'contested', assessedBy: 'A. Reviewer' });
+    return a.status === 'contested' && a.findings.some((f) => f.code === 'human_override');
+  })(),
+  'An assessor may know something the fields do not capture, but an override that leaves no trace is indistinguishable from a bug.');
+
+check('a critical claim losing all admissible support is named',
+  applyIntegrityGate(
+    [{ evidenceRef: 'E-X', producer: 'agent', collectionPlane: 'self_reported', reach: { couldModifyLogs: true } }],
+    [{ evidenceRef: 'E-X', claimRef: 'C-99', critical: true }],
+  ).criticalClaimsUndermined.length === 1,
+  'The failure mode is a claim that still looks supported by artefacts nobody can vouch for. It has to be named, not merely down-weighted.');
+
+console.log('\nContainment failure');
+
+const containmentDiff = diffPassports(EXAMPLE_PASSPORT_V3, EXAMPLE_PASSPORT_V5_CONTAINMENT);
+const containmentDelta = computeDelta({
+  claims: EXAMPLE_CLAIMS, evidence: EXAMPLE_EVIDENCE, edges: EXAMPLE_EDGES,
+  changes: containmentDiff.changes,
+  unclassifiedFields: containmentDiff.unclassified.map((u) => u.field),
+  obligations: EXAMPLE_OBLIGATIONS, currentPassportHash: EXAMPLE_PASSPORT_HASHES.v3,
+});
+const impactOf = (ref: string) => containmentDelta.outcomes.find((o) => o.claimRef === ref)?.impact;
+
+check('the containment surface is fully classified, forcing no blanket reassessment',
+  containmentDiff.unclassified.length === 0 && containmentDiff.changes.length >= 8,
+  'Every containment field must be in the taxonomy. An unclassified one fails closed to full reassessment, which is safe but destroys the selective-reassessment claim.');
+
+check('opening an egress path invalidates egress containment',
+  impactOf('C-15') === 'invalidated',
+  'A shared proxy with internet reachability is exactly the change the egress evidence was collected to exclude.');
+
+check('moving logs into the agent plane invalidates evaluation integrity',
+  impactOf('C-17') === 'invalidated',
+  'This is the incident lesson: the agent gained reach over the record of its own behaviour, without any change to the agent itself.');
+
+check('injection evidence survives a containment change',
+  impactOf('C-12') === 'preserved',
+  'Selective reassessment is only worth anything if unrelated evidence is preserved. A containment change must not invalidate retrieval-injection evidence.');
+
+check('a containment change suspends the permit',
+  recommend({
+    claims: containmentDelta.outcomes.map((o) => ({
+      ref: o.claimRef, critical: o.critical,
+      state: deriveClaimState({
+        supportingEvidence: o.preservedEvidenceRefs.length,
+        challengingEvidence: o.challengingEvidenceRefs.length,
+        invalidatedEvidence: o.invalidatedEvidenceRefs.length,
+      }),
+    })),
+    delta: containmentDelta,
+  }).suspendExistingPermit,
+  'Critical containment claims invalidated by a change must not leave a live permit standing.');
+
+check('the change generates evidence-integrity work, not only re-tests',
+  containmentDelta.newObligations.some((o) => o.testId === 'evidence-integrity-review'),
+  'A change of log plane does not invalidate the tests; it invalidates the record of them. The obligation differs and the plan must say so.');
 
 console.log(`\n${failures === 0 ? 'All checks passed.' : `${failures} CHECK(S) FAILED.`}\n`);
 process.exitCode = failures === 0 ? 0 : 1;

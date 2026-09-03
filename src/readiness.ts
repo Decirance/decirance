@@ -300,6 +300,25 @@ export function scanForReadiness(input: ScanInput): ReadinessReport {
     memoryWritePolicy: {},
     modelArtifactDigest: 'unspecified',
     indexContentSources: [],
+    // A repository scan cannot determine any of this. Left empty on purpose:
+    // the integrity assessment reads an unset collection plane as unverifiable,
+    // and a scanner that guessed "deny-all" would manufacture the reassuring
+    // answer for the field that matters most.
+    networkEgress: '',
+    permittedDestinations: [],
+    sandboxImage: '',
+    packageRegistries: [],
+    sharedStorage: [],
+    interAgentChannels: [],
+    maxConcurrentInstances: '',
+    safetyClassifiers: [],
+    loggingDestination: '',
+    logPlane: '',
+    monitoringPlane: '',
+    evaluationHarness: '',
+    scorerConfig: '',
+    shutdownMechanism: '',
+    credentialScopes: [],
   };
 
   return {

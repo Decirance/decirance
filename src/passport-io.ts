@@ -196,6 +196,9 @@ export function parsePassport(input: unknown): PassportParseResult {
   const str = (v: unknown, fallback = ''): string =>
     typeof v === 'string' ? v : fallback;
 
+  const containment = obj((raw as Record<string, unknown>).containment);
+  const observability = obj((raw as Record<string, unknown>).observability);
+
   const snapshot: PassportSnapshot = {
     modelProvider: provider,
     modelName,
@@ -221,6 +224,24 @@ export function parsePassport(input: unknown): PassportParseResult {
     memoryWritePolicy: obj(components.memory_write_policy),
     modelArtifactDigest: str(components.model_artifact_digest, 'unspecified'),
     indexContentSources: strArray(components.index_content_sources),
+    // Containment surface. A document that does not state its egress policy or
+    // log plane leaves these empty, and empty is read as unknown by the
+    // integrity assessment rather than as safe.
+    networkEgress: str(containment.network_egress),
+    permittedDestinations: strArray(containment.permitted_destinations),
+    sandboxImage: str(containment.sandbox_image),
+    packageRegistries: strArray(containment.package_registries),
+    sharedStorage: strArray(containment.shared_storage),
+    interAgentChannels: strArray(containment.inter_agent_channels),
+    maxConcurrentInstances: str(containment.max_concurrent_instances),
+    safetyClassifiers: strArray(containment.safety_classifiers),
+    loggingDestination: str(observability.logging_destination),
+    logPlane: str(observability.log_plane),
+    monitoringPlane: str(observability.monitoring_plane),
+    evaluationHarness: str(observability.evaluation_harness),
+    scorerConfig: str(observability.scorer_config),
+    shutdownMechanism: str(containment.shutdown_mechanism),
+    credentialScopes: strArray(containment.credential_scopes),
   };
 
   return {

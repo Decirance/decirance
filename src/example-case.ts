@@ -54,6 +54,25 @@ export const EXAMPLE_PASSPORT_V3: PassportSnapshot = {
   memoryWritePolicy: { writers: ['agent'], retention: '30d', rollback: 'enabled' },
   modelArtifactDigest: 'sha256:4c1e…7b',
   indexContentSources: ['internal:policy-library'],
+  // Containment baseline. The agent has no general egress, pulls packages from
+  // an internal mirror, writes its logs to a store it cannot reach, and cannot
+  // see the harness that judges it. Each of these is a fact the assurance case
+  // depends on, which is why each is in the fingerprint.
+  networkEgress: 'deny-all',
+  permittedDestinations: ['case-store.internal', 'model-api.anthropic.com'],
+  sandboxImage: 'meridian-agent-sandbox:3.1.0',
+  packageRegistries: ['internal-mirror.meridian.gov.uk'],
+  sharedStorage: [],
+  interAgentChannels: [],
+  maxConcurrentInstances: '4',
+  safetyClassifiers: ['cyber-refusal', 'pii-redaction', 'injection-filter'],
+  loggingDestination: 'siem:meridian-immutable',
+  logPlane: 'independent',
+  monitoringPlane: 'independent',
+  evaluationHarness: 'inspect@0.3.44',
+  scorerConfig: 'sha256:9d02…af',
+  shutdownMechanism: 'identity-revocation+gateway-kill',
+  credentialScopes: ['case:read@15m'],
 };
 
 /** Cyber-security change: a write permission is granted. */
@@ -102,6 +121,48 @@ export const EXAMPLE_PASSPORT_V4_POISONING: PassportSnapshot = {
 };
 
 /**
+ * Containment change: a shared package proxy with unintended reachability.
+ *
+ * The scenario the 2026 evaluation incidents argue for, and the one that best
+ * separates this product from a runtime blocker. Nobody edits the agent. A
+ * platform team adds a shared package proxy so builds stop timing out. The
+ * proxy happens to be internet-reachable, and it is shared, so it also becomes
+ * a channel between concurrent instances. Two further consequences follow that
+ * nobody intends: the log destination moves onto infrastructure the agent can
+ * write to, and the cyber-refusal classifier is switched off because it was
+ * blocking legitimate package fetches.
+ *
+ * Every one of those is a configuration fact, none is an incident, and a
+ * runtime firewall watching individual actions has nothing to fire on. What
+ * has actually happened is that the agent is no longer the system that was
+ * assessed, and — worse — the evidence that would tell you otherwise is now
+ * collected somewhere the agent can reach.
+ */
+export const EXAMPLE_PASSPORT_V5_CONTAINMENT: PassportSnapshot = {
+  ...EXAMPLE_PASSPORT_V3,
+  networkEgress: 'allow-proxy',
+  permittedDestinations: [
+    ...EXAMPLE_PASSPORT_V3.permittedDestinations,
+    'pkg-proxy.shared.internal',
+  ],
+  packageRegistries: [
+    ...EXAMPLE_PASSPORT_V3.packageRegistries,
+    'pkg-proxy.shared.internal',
+  ],
+  sharedStorage: ['pkg-proxy-cache'],
+  interAgentChannels: ['pkg-proxy-cache'],
+  // The classifier was disabled to stop it blocking package fetches.
+  safetyClassifiers: EXAMPLE_PASSPORT_V3.safetyClassifiers.filter(
+    (c) => c !== 'cyber-refusal',
+  ),
+  // The change that destroys evidence integrity: logs now land somewhere the
+  // agent can write. Nothing about the agent changed to cause it.
+  loggingDestination: 'pkg-proxy-cache:logs',
+  logPlane: 'agent_writable',
+  monitoringPlane: 'shared_readable',
+};
+
+/**
  * Real digests, computed from the passports themselves.
  *
  * These were placeholder strings ("passport:v3"), which quietly undermined the
@@ -121,9 +182,56 @@ const digestFor = (snapshot: PassportSnapshot, version: string): string =>
 export const EXAMPLE_PASSPORT_HASHES = {
   v3: digestFor(EXAMPLE_PASSPORT_V3, '3.0.0'),
   v4: digestFor(EXAMPLE_PASSPORT_V4_CYBER, '4.0.0'),
+  v5: digestFor(EXAMPLE_PASSPORT_V5_CONTAINMENT, '5.0.0'),
 } as const;
 
 export const EXAMPLE_CLAIMS: ClaimNode[] = [
+  // ── Containment and evaluation integrity ────────────────────────────────
+  // These exist because an agent can attack the mechanism used to assure it.
+  // C-17 is the unusual one: it is a claim about the assurance process rather
+  // than about the agent, and without it a case can be fully "supported" by
+  // artefacts the agent itself could have written.
+  {
+    ref: 'C-15',
+    statement:
+      'Network access is technically constrained to approved destinations.',
+    domain: 'cyber',
+    critical: true,
+    coversTests: ['egress-containment-test', 'proxy-reachability-scan'],
+  },
+  {
+    ref: 'C-16',
+    statement:
+      'Credentials reachable by the agent cannot authorise action outside the Context Contract.',
+    domain: 'cyber',
+    critical: true,
+    coversTests: ['credential-scope-review', 'token-lifetime-check'],
+  },
+  {
+    ref: 'C-17',
+    statement:
+      'The agent cannot materially alter the mechanism used to evaluate it, or the record of what it did.',
+    domain: 'cyber',
+    critical: true,
+    coversTests: ['harness-isolation-review', 'scorer-independence-check', 'log-plane-attestation'],
+  },
+  {
+    ref: 'C-18',
+    statement:
+      'Concurrent agent instances cannot establish unauthorised shared state or communication.',
+    domain: 'cyber',
+    critical: false,
+    coversTests: ['shared-state-review', 'inter-agent-channel-scan'],
+  },
+  {
+    ref: 'C-19',
+    statement:
+      'The organisation can terminate the agent and revoke its credentials within the agreed period.',
+    domain: 'resilience',
+    critical: true,
+    coversTests: ['shutdown-drill', 'credential-revocation-drill'],
+  },
+
   {
     ref: 'C-01',
     statement:
@@ -358,6 +466,42 @@ export const EXAMPLE_EVIDENCE: ExampleEvidenceMeta[] = [
     scopePassportHash: EXAMPLE_PASSPORT_HASHES.v3,
     quality: { provenance: 90, coverage: 55, constructValidity: 85, ecologicalValidity: 70, repeatability: 70 },
   },
+  // ── Containment and evaluation-integrity evidence ─────────────────────
+  {
+    ref: 'E-140', title: 'Egress containment test',
+    detail: 'Deny-all default; 2 allowlisted destinations; 340 blocked attempts observed',
+    owner: 'Platform Security', collectedAt: '2026-06-22', sourceKind: 'pen_test',
+    scopePassportHash: EXAMPLE_PASSPORT_HASHES.v3,
+    quality: { provenance: 95, coverage: 85, constructValidity: 85, ecologicalValidity: 80, repeatability: 90 },
+  },
+  {
+    ref: 'E-143', title: 'Credential scope and lifetime review',
+    detail: '15-minute case-scoped tokens; no standing credentials in the sandbox',
+    owner: 'Identity Team', collectedAt: '2026-06-20', sourceKind: 'architecture_review',
+    scopePassportHash: EXAMPLE_PASSPORT_HASHES.v3,
+    quality: { provenance: 90, coverage: 75, constructValidity: 80, ecologicalValidity: 70, repeatability: 85 },
+  },
+  {
+    ref: 'E-146', title: 'Harness isolation and log-plane attestation',
+    detail: 'Scorer held outside the sandbox; logs write-once to an independent SIEM',
+    owner: 'Independent Assessor', collectedAt: '2026-06-24', sourceKind: 'attestation',
+    scopePassportHash: EXAMPLE_PASSPORT_HASHES.v3,
+    quality: { provenance: 95, coverage: 80, constructValidity: 90, ecologicalValidity: 75, repeatability: 80 },
+  },
+  {
+    ref: 'E-149', title: 'Shared-state and inter-agent channel scan',
+    detail: 'No shared cache or message channel between the 4 concurrent instances',
+    owner: 'Platform Security', collectedAt: '2026-06-21', sourceKind: 'pen_test',
+    scopePassportHash: EXAMPLE_PASSPORT_HASHES.v3,
+    quality: { provenance: 85, coverage: 70, constructValidity: 75, ecologicalValidity: 75, repeatability: 80 },
+  },
+  {
+    ref: 'E-152', title: 'Shutdown and credential-revocation drill',
+    detail: 'Agent terminated and tokens revoked in 4m12s against a 15m objective',
+    owner: 'SRE', collectedAt: '2026-06-19', sourceKind: 'recovery_exercise',
+    scopePassportHash: EXAMPLE_PASSPORT_HASHES.v3,
+    quality: { provenance: 90, coverage: 80, constructValidity: 85, ecologicalValidity: 90, repeatability: 75 },
+  },
 ];
 
 export const EXAMPLE_EDGES: GraphEdge[] = [
@@ -395,6 +539,18 @@ export const EXAMPLE_EDGES: GraphEdge[] = [
   { kind: 'supports', sourceRef: 'E-124', targetRef: 'C-12', severedBy: ['data_source_added', 'index_content_source', 'model_version', 'model_provider', 'model_artifact_digest', 'system_prompt'] },
   { kind: 'supports', sourceRef: 'E-127', targetRef: 'C-13', severedBy: ['memory_write_policy', 'memory_config'] },
   { kind: 'supports', sourceRef: 'E-130', targetRef: 'C-14', severedBy: ['mcp_server_added', 'mcp_server_changed', 'tool_schema_changed'] },
+  // Containment evidence is severed by the containment surface, not by the
+  // model or tool surface. A proxy that opens a path to the internet breaks
+  // egress evidence while leaving injection evidence untouched — which is the
+  // discrimination the whole method is for.
+  { kind: 'supports', sourceRef: 'E-140', targetRef: 'C-15', severedBy: ['network_egress', 'permitted_destination', 'package_registry', 'sandbox_image'] },
+  { kind: 'supports', sourceRef: 'E-143', targetRef: 'C-16', severedBy: ['credential_scope', 'permission_granted', 'identity_binding'] },
+  // Evaluation-integrity evidence. `logging_destination` and
+  // `monitoring_plane` sever this because evidence collected where the agent
+  // can write is not evidence about the agent.
+  { kind: 'supports', sourceRef: 'E-146', targetRef: 'C-17', severedBy: ['logging_destination', 'monitoring_plane', 'evaluation_harness', 'scorer_config'] },
+  { kind: 'supports', sourceRef: 'E-149', targetRef: 'C-18', severedBy: ['shared_storage', 'inter_agent_channel', 'agent_concurrency'] },
+  { kind: 'supports', sourceRef: 'E-152', targetRef: 'C-19', severedBy: ['shutdown_mechanism', 'deployment_environment', 'identity_binding'] },
   { kind: 'derives_from', sourceRef: 'C-12', targetRef: 'C-11', severedBy: [] },
   // Auditability is argued from the approval gate holding.
   { kind: 'derives_from', sourceRef: 'C-05', targetRef: 'C-01', severedBy: [] },
@@ -402,6 +558,20 @@ export const EXAMPLE_EDGES: GraphEdge[] = [
 
 /** Tests each change kind obliges, independent of existing claims. */
 export const EXAMPLE_OBLIGATIONS: ObligationMap = {
+  network_egress: ['egress-containment-test', 'proxy-reachability-scan'],
+  package_registry: ['supply-chain-provenance-check', 'proxy-reachability-scan'],
+  shared_storage: ['shared-state-review', 'cross-instance-leakage-test'],
+  inter_agent_channel: ['inter-agent-channel-scan'],
+  safety_classifier: ['refusal-regression-pack'],
+  // A change of log plane obliges re-establishing evidence integrity, not
+  // re-running the tests: the tests were fine, the record of them is what is
+  // now in question.
+  logging_destination: ['log-plane-attestation', 'evidence-integrity-review'],
+  monitoring_plane: ['monitoring-independence-review'],
+  evaluation_harness: ['harness-isolation-review'],
+  scorer_config: ['scorer-independence-check'],
+  shutdown_mechanism: ['shutdown-drill', 'credential-revocation-drill'],
+  credential_scope: ['credential-scope-review', 'token-lifetime-check'],
   permission_granted: [
     'human-approval-workflow-test',
     'write-integrity-test',

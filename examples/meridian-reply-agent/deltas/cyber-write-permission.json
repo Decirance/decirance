@@ -21,6 +21,88 @@
   ],
   "claim_impacts": [
     {
+      "claimRef": "C-15",
+      "statement": "Network access is technically constrained to approved destinations.",
+      "domain": "cyber",
+      "critical": true,
+      "impact": "preserved",
+      "triggeredBy": [],
+      "path": [],
+      "invalidatedEvidenceRefs": [],
+      "preservedEvidenceRefs": [
+        "E-140"
+      ],
+      "challengingEvidenceRefs": [],
+      "requiredTests": []
+    },
+    {
+      "claimRef": "C-16",
+      "statement": "Credentials reachable by the agent cannot authorise action outside the Context Contract.",
+      "domain": "cyber",
+      "critical": true,
+      "impact": "invalidated",
+      "triggeredBy": [
+        "permission_granted"
+      ],
+      "path": [
+        "E-143 -[supports]-> C-16"
+      ],
+      "invalidatedEvidenceRefs": [
+        "E-143"
+      ],
+      "preservedEvidenceRefs": [],
+      "challengingEvidenceRefs": [],
+      "requiredTests": [
+        "credential-scope-review",
+        "token-lifetime-check"
+      ]
+    },
+    {
+      "claimRef": "C-17",
+      "statement": "The agent cannot materially alter the mechanism used to evaluate it, or the record of what it did.",
+      "domain": "cyber",
+      "critical": true,
+      "impact": "preserved",
+      "triggeredBy": [],
+      "path": [],
+      "invalidatedEvidenceRefs": [],
+      "preservedEvidenceRefs": [
+        "E-146"
+      ],
+      "challengingEvidenceRefs": [],
+      "requiredTests": []
+    },
+    {
+      "claimRef": "C-18",
+      "statement": "Concurrent agent instances cannot establish unauthorised shared state or communication.",
+      "domain": "cyber",
+      "critical": false,
+      "impact": "preserved",
+      "triggeredBy": [],
+      "path": [],
+      "invalidatedEvidenceRefs": [],
+      "preservedEvidenceRefs": [
+        "E-149"
+      ],
+      "challengingEvidenceRefs": [],
+      "requiredTests": []
+    },
+    {
+      "claimRef": "C-19",
+      "statement": "The organisation can terminate the agent and revoke its credentials within the agreed period.",
+      "domain": "resilience",
+      "critical": true,
+      "impact": "preserved",
+      "triggeredBy": [],
+      "path": [],
+      "invalidatedEvidenceRefs": [],
+      "preservedEvidenceRefs": [
+        "E-152"
+      ],
+      "challengingEvidenceRefs": [],
+      "requiredTests": []
+    },
+    {
       "claimRef": "C-01",
       "statement": "The agent cannot alter durable customer state without a named human approver.",
       "domain": "cyber",
@@ -282,6 +364,13 @@
       ]
     },
     {
+      "claim": "C-16",
+      "tests": [
+        "credential-scope-review",
+        "token-lifetime-check"
+      ]
+    },
+    {
       "claim": "C-04",
       "tests": [
         "injection-challenge-pack"
@@ -295,14 +384,14 @@
     }
   ],
   "summary": {
-    "preserved": 10,
+    "preserved": 14,
     "affected": 1,
-    "invalidated": 2,
+    "invalidated": 3,
     "unproven": 2,
     "challenged": 1,
-    "evidencePreserved": 14,
-    "evidenceInvalidated": 2,
-    "reassessmentAvoided": 0.7142857142857143
+    "evidencePreserved": 18,
+    "evidenceInvalidated": 3,
+    "reassessmentAvoided": 0.7368421052631579
   },
   "recommendation": {
     "outcome": "reject",
@@ -320,6 +409,7 @@
         "ceiling": "supervised_pilot",
         "reason": "Critical claim(s) without sufficient support, under the \"supervised_pilot\" policy.",
         "claimRefs": [
+          "C-16",
           "C-01",
           "C-02"
         ]
@@ -337,6 +427,6 @@
   "permit_impact": {
     "to": "suspended",
     "trigger": "suspend_material_change",
-    "rationale": "2 critical claim(s) invalidated; operation must pause pending targeted reassessment."
+    "rationale": "3 critical claim(s) invalidated; operation must pause pending targeted reassessment."
   }
 }

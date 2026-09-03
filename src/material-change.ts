@@ -51,6 +51,28 @@ export type MaterialChangeKind =
   | 'memory_write_policy'
   | 'model_artifact_digest'
   | 'index_content_source'
+  // Containment and evaluation-integrity surface. The 2026 evaluation
+  // incidents showed that an agent's reachable environment — its egress path,
+  // its sandbox, the package proxy it pulls through, the store its logs go to,
+  // the harness and scorer that judge it — is part of the assessed system, not
+  // infrastructure detail beneath it. An agent that cannot reach the internet
+  // is a different system from the same agent that can, and a "pass" recorded
+  // to a log the agent could write is not the same artefact as one recorded
+  // where it could not.
+  | 'network_egress'
+  | 'permitted_destination'
+  | 'sandbox_image'
+  | 'package_registry'
+  | 'shared_storage'
+  | 'inter_agent_channel'
+  | 'agent_concurrency'
+  | 'safety_classifier'
+  | 'logging_destination'
+  | 'monitoring_plane'
+  | 'evaluation_harness'
+  | 'scorer_config'
+  | 'shutdown_mechanism'
+  | 'credential_scope'
   | 'cosmetic_metadata';
 
 export type AssuranceDomain = 'cyber' | 'resilience' | 'both';
@@ -95,6 +117,23 @@ export const CHANGE_DOMAIN: Record<MaterialChangeKind, ChangeDomain> = {
   memory_write_policy: 'cyber',
   model_artifact_digest: 'both',
   index_content_source: 'cyber',
+  network_egress: 'cyber',
+  permitted_destination: 'cyber',
+  sandbox_image: 'cyber',
+  package_registry: 'cyber',
+  shared_storage: 'cyber',
+  inter_agent_channel: 'cyber',
+  // Concurrency and shutdown bear on both: more parallel instances is a
+  // containment question and a capacity one, and a shutdown path that no
+  // longer works is a recovery failure as much as a security one.
+  agent_concurrency: 'both',
+  safety_classifier: 'cyber',
+  logging_destination: 'cyber',
+  monitoring_plane: 'cyber',
+  evaluation_harness: 'cyber',
+  scorer_config: 'cyber',
+  shutdown_mechanism: 'both',
+  credential_scope: 'cyber',
   cosmetic_metadata: 'none',
 };
 
@@ -125,6 +164,30 @@ export interface PassportSnapshot {
   memoryWritePolicy: Record<string, unknown>;
   modelArtifactDigest: string;
   indexContentSources: string[];
+  /**
+   * Containment and evaluation-integrity surface.
+   *
+   * `logPlane` and `monitoringPlane` are the two that matter most and are the
+   * least obvious: they record whether the agent could write to the place its
+   * own evidence is collected. An agent that gains that reach invalidates the
+   * integrity of every artefact collected there, without any change to the
+   * agent itself.
+   */
+  networkEgress: string;
+  permittedDestinations: string[];
+  sandboxImage: string;
+  packageRegistries: string[];
+  sharedStorage: string[];
+  interAgentChannels: string[];
+  maxConcurrentInstances: string;
+  safetyClassifiers: string[];
+  loggingDestination: string;
+  logPlane: string;
+  monitoringPlane: string;
+  evaluationHarness: string;
+  scorerConfig: string;
+  shutdownMechanism: string;
+  credentialScopes: string[];
 }
 
 export interface MaterialChange {
@@ -169,6 +232,21 @@ const KNOWN_FIELDS: readonly (keyof PassportSnapshot)[] = [
   'dataProcessingTerms',
   'dataResidency',
   'entitlementExpiry',
+  'networkEgress',
+  'permittedDestinations',
+  'sandboxImage',
+  'packageRegistries',
+  'sharedStorage',
+  'interAgentChannels',
+  'maxConcurrentInstances',
+  'safetyClassifiers',
+  'loggingDestination',
+  'logPlane',
+  'monitoringPlane',
+  'evaluationHarness',
+  'scorerConfig',
+  'shutdownMechanism',
+  'credentialScopes',
   'mcpServers',
   'memoryWritePolicy',
   'modelArtifactDigest',
@@ -359,6 +437,30 @@ export function diffPassports(
   push(jsonChange('dataProcessingTerms', 'data_processing_terms', from.dataProcessingTerms, to.dataProcessingTerms, 'Data-processing terms'));
   push(scalarChange('dataResidency', 'data_residency', from.dataResidency, to.dataResidency, 'Data residency'));
   push(scalarChange('entitlementExpiry', 'entitlement_expiry', from.entitlementExpiry, to.entitlementExpiry, 'Entitlement expiry'));
+
+  push(scalarChange('networkEgress', 'network_egress', from.networkEgress, to.networkEgress, 'Network egress policy'));
+  push(scalarChange('sandboxImage', 'sandbox_image', from.sandboxImage, to.sandboxImage, 'Sandbox image'));
+  push(scalarChange('maxConcurrentInstances', 'agent_concurrency', from.maxConcurrentInstances, to.maxConcurrentInstances, 'Maximum concurrent instances'));
+  push(scalarChange('loggingDestination', 'logging_destination', from.loggingDestination, to.loggingDestination, 'Logging destination'));
+  // Two separate facts. The destination can stay the same while the plane
+  // changes from one the agent cannot write to one it can, and that second
+  // change is the one that destroys evidence integrity.
+  push(scalarChange('logPlane', 'logging_destination', from.logPlane, to.logPlane, 'Log collection plane'));
+  push(scalarChange('monitoringPlane', 'monitoring_plane', from.monitoringPlane, to.monitoringPlane, 'Monitoring plane'));
+  push(scalarChange('evaluationHarness', 'evaluation_harness', from.evaluationHarness, to.evaluationHarness, 'Evaluation harness'));
+  push(scalarChange('scorerConfig', 'scorer_config', from.scorerConfig, to.scorerConfig, 'Scorer configuration'));
+  push(scalarChange('shutdownMechanism', 'shutdown_mechanism', from.shutdownMechanism, to.shutdownMechanism, 'Shutdown mechanism'));
+
+  changes.push(
+    ...setChanges('permittedDestinations', 'permitted_destination', 'permitted_destination', from.permittedDestinations, to.permittedDestinations, 'Permitted destination'),
+    ...setChanges('packageRegistries', 'package_registry', 'package_registry', from.packageRegistries, to.packageRegistries, 'Package registry'),
+    ...setChanges('sharedStorage', 'shared_storage', 'shared_storage', from.sharedStorage, to.sharedStorage, 'Shared storage'),
+    ...setChanges('interAgentChannels', 'inter_agent_channel', 'inter_agent_channel', from.interAgentChannels, to.interAgentChannels, 'Inter-agent channel'),
+    // Removal matters as much as addition here: a disabled safety classifier
+    // is the change, and treating removals as uninteresting would miss it.
+    ...setChanges('safetyClassifiers', 'safety_classifier', 'safety_classifier', from.safetyClassifiers, to.safetyClassifiers, 'Safety classifier'),
+    ...setChanges('credentialScopes', 'credential_scope', 'credential_scope', from.credentialScopes, to.credentialScopes, 'Credential scope'),
+  );
 
   changes.push(
     ...setChanges('tools', 'tool_added', 'tool_removed', from.tools, to.tools, 'Tool'),
