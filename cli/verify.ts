@@ -709,13 +709,17 @@ if (jsonIndex >= 0) {
   const { writeFileSync, mkdirSync } = await import('node:fs');
   const { dirname, resolve } = await import('node:path');
   const { execSync } = await import('node:child_process');
+  // The commit of the engine this harness ran against. Deliberately not the
+  // site build: the two are separate artefacts, and labelling an engine
+  // commit as the deployed one would be exactly the kind of quiet
+  // imprecision these pages exist to avoid.
   let commit = 'unknown';
   try { commit = execSync('git rev-parse --short HEAD').toString().trim(); } catch { /* not a repo */ }
   const out = resolve(process.argv[jsonIndex + 1] ?? 'check-summary.json');
   mkdirSync(dirname(out), { recursive: true });
   writeFileSync(out, JSON.stringify({
     generatedAt: new Date().toISOString(),
-    commit,
+    engineCommit: commit,
     total: results.reduce((n, g) => n + g.checks.length, 0),
     failures,
     properties: results

@@ -113,7 +113,12 @@ export function parseMcpConfig(input: unknown): McpParseResult {
     try {
       raw = JSON.parse(input);
     } catch (e) {
-      return { servers: [], warnings: [`Not valid JSON: ${(e as Error).message}`], unknownFields: [], readable: false };
+      return {
+        servers: [],
+        warnings: [`The configuration is not valid JSON, so nothing can be read from it. (${(e as Error).message})`],
+        unknownFields: [],
+        readable: false,
+      };
     }
   }
   if (!isObject(raw)) {
