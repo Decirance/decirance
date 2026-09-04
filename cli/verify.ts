@@ -63,6 +63,8 @@ import {
   EXAMPLE_BASELINE,
   EXAMPLE_CONTRACT_POLICY_VIEW,
   reassessmentPlan,
+  transitionsFrom,
+  ALL_PERMIT_STATES,
 } from '../src/index.ts';
 
 let failures = 0;
@@ -811,6 +813,53 @@ check('a classified change still yields a decided two-sided result',
     return d.summary.unknown === 0 && d.summary.preserved > 0 && d.summary.invalidated > 0;
   })(),
   'Adding a third state must not make the engine hedge on questions it can actually decide. UNAFFECTED remains a positive finding.');
+
+
+section('Approval gate');
+
+check('awaiting_approval grants no authority',
+  !checkPermitInvariant(
+    { reference: 'T', state: 'awaiting_approval', passportDigest: 'd',
+      permittedActions: ['x'], prohibitedActions: [], conditions: [] },
+    { action: 'x', currentPassportDigest: 'd' },
+  ).permitted,
+  'A finished assessment is not an authorisation. The whole product argument is that something has to happen between the two.');
+
+check('the engine hands to a decision rather than issuing',
+  transitionsFrom('under_review').every((t) => t.to !== 'active'),
+  'under_review previously ran straight to active on an "approve" trigger, so a recommendation could become a permit with no decision in between.');
+
+check('the assessment can only reach a state that waits for a person',
+  transitionsFrom('under_review').some((t) => t.to === 'awaiting_approval' && t.by === 'assurance_engine'),
+  'The engine may declare the assessment finished. That is the most it may do.');
+
+check('every decision leaving awaiting_approval belongs to a human',
+  transitionsFrom('awaiting_approval').every((t) => t.by === 'accountable_owner'),
+  'Issue, pilot and reject are all decisions. None may be taken by the engine or by a timer.');
+
+check('issue, supervised pilot and reject are all reachable from the gate',
+  ['active', 'pilot', 'rejected'].every((to) =>
+    transitionsFrom('awaiting_approval').some((t) => t.to === to)),
+  'An approver offered only one outcome is not deciding anything.');
+
+check('superseded grants no authority',
+  !checkPermitInvariant(
+    { reference: 'T', state: 'superseded', passportDigest: 'd',
+      permittedActions: ['x'], prohibitedActions: [], conditions: [] },
+    { action: 'x', currentPassportDigest: 'd' },
+  ).permitted,
+  'A reissue previously left its predecessor looking live — two permits for one agent, both apparently in force.');
+
+check('a live permit can be superseded',
+  transitionsFrom('active').some((t) => t.to === 'superseded'),
+  'Renewal has to leave the old version somewhere terminal, or the history stops being readable.');
+
+check('the invariant still decides over the enlarged state space',
+  (() => {
+    const r = verifyNoAuthorityOutsideOperatingStates();
+    return r.holds && ALL_PERMIT_STATES.length === 12;
+  })(),
+  'Adding states must extend the exhaustive check, not quietly narrow its coverage. There is one state list, so it cannot fall behind.');
 
 console.log(`\n${failures === 0 ? 'All checks passed.' : `${failures} CHECK(S) FAILED.`}\n`);
 process.exitCode = failures === 0 ? 0 : 1;

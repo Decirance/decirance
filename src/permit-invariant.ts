@@ -22,7 +22,7 @@
  * grants authority — the only defect class here that could cause harm.
  */
 
-import { mayOperate, type PermitState } from './permit-state-machine';
+import { ALL_PERMIT_STATES, mayOperate, type PermitState } from './permit-state-machine';
 
 export interface PermitBinding {
   reference: string;
@@ -127,12 +127,14 @@ export function verifyNoAuthorityOutsideOperatingStates(): {
   holds: boolean;
   violations: PermitState[];
 } {
-  const allStates: PermitState[] = [
-    'proposed', 'under_review', 'active', 'pilot', 'restricted',
-    'suspended', 'reassessment', 'expired', 'rejected', 'revoked',
-  ];
-
-  const violations = allStates.filter((state) => {
+  // The state space itself, not a copy of it.
+  //
+  // This enumeration is what makes the property *decided* rather than sampled,
+  // so a second list that could fall behind the first would be the worst
+  // possible defect here: the invariant would go on claiming coverage it no
+  // longer had. Adding a state to the machine now extends this check
+  // automatically, because there is only one list.
+  const violations = ALL_PERMIT_STATES.filter((state) => {
     if (mayOperate(state)) return false;
     // An otherwise perfect request: only the state should deny it.
     const result = checkPermitInvariant(

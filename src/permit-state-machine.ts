@@ -10,6 +10,14 @@
 export type PermitState =
   | 'proposed'
   | 'under_review'
+  /**
+   * Assessment finished, decision not taken.
+   *
+   * Previously implicit inside under_review, which meant the engine could not
+   * represent the moment the product's whole argument turns on: a case that is
+   * ready, and a decision nobody has made yet.
+   */
+  | 'awaiting_approval'
   | 'active'
   | 'pilot'
   | 'restricted'
@@ -17,7 +25,22 @@ export type PermitState =
   | 'reassessment'
   | 'expired'
   | 'rejected'
-  | 'revoked';
+  | 'revoked'
+  /** Replaced by a newer permit version. Terminal. */
+  | 'superseded';
+
+/**
+ * Every permit state, as data.
+ *
+ * The authority invariant is decided by enumerating states, so it needs the
+ * state space as a value rather than only as a type. Exporting it means a new
+ * state cannot be added without the exhaustiveness check noticing.
+ */
+export const ALL_PERMIT_STATES: PermitState[] = [
+  'proposed', 'under_review', 'awaiting_approval', 'active', 'pilot',
+  'restricted', 'suspended', 'reassessment', 'expired', 'rejected',
+  'revoked', 'superseded',
+];
 
 export type ActorRole =
   | 'accountable_owner' // the human who signs
@@ -58,7 +81,20 @@ export const PERMIT_TRANSITIONS: readonly PermitTransition[] = [
     description: 'Agent and context submitted; evidence gathering begins.',
   },
   {
+    // The engine may declare the assessment finished. That is the most it may
+    // do. Previously `under_review` ran straight to `active` on an "approve"
+    // trigger, so a recommendation could become a permit with nothing in
+    // between — which is the one thing the product says never happens.
     from: 'under_review',
+    to: 'awaiting_approval',
+    trigger: 'submit_for_decision',
+    by: 'assurance_engine',
+    source: 'inferred',
+    description:
+      'Assessment complete and a recommendation produced. No authority is granted; a named person must decide.',
+  },
+  {
+    from: 'awaiting_approval',
     to: 'active',
     trigger: 'approve',
     by: 'accountable_owner',
@@ -66,7 +102,7 @@ export const PERMIT_TRANSITIONS: readonly PermitTransition[] = [
     description: 'Human approval. Evidence supports operation in context.',
   },
   {
-    from: 'under_review',
+    from: 'awaiting_approval',
     to: 'pilot',
     trigger: 'approve_supervised_pilot',
     by: 'accountable_owner',
@@ -75,7 +111,7 @@ export const PERMIT_TRANSITIONS: readonly PermitTransition[] = [
       'Restricted approval to obtain missing evidence under human review.',
   },
   {
-    from: 'under_review',
+    from: 'awaiting_approval',
     to: 'rejected',
     trigger: 'reject',
     by: 'accountable_owner',
@@ -245,6 +281,31 @@ export const OPERATING_STATES: readonly PermitState[] = [
   'restricted',
 ];
 
+/**
+ * Supersession, appended so a reissue leaves its predecessor terminal.
+ *
+ * Without it, renewing produced a new version while the old one still read as
+ * live — two permits for one agent, both apparently in force.
+ */
+export const SUPERSESSION_TRANSITIONS: PermitTransition[] = [
+  {
+    from: 'active',
+    to: 'superseded',
+    trigger: 'supersede',
+    by: 'assurance_engine',
+    source: 'inferred',
+    description: 'A new permit version was issued for this agent and context.',
+  },
+  {
+    from: 'restricted',
+    to: 'superseded',
+    trigger: 'supersede',
+    by: 'assurance_engine',
+    source: 'inferred',
+    description: 'A new permit version was issued for this agent and context.',
+  },
+];
+
 export function mayOperate(state: PermitState): boolean {
   return OPERATING_STATES.includes(state);
 }
@@ -254,7 +315,7 @@ export function isTerminal(state: PermitState): boolean {
 }
 
 export function transitionsFrom(state: PermitState): PermitTransition[] {
-  return PERMIT_TRANSITIONS.filter((t) => t.from === state);
+  return [...PERMIT_TRANSITIONS, ...SUPERSESSION_TRANSITIONS].filter((t) => t.from === state);
 }
 
 export type TransitionResult =
