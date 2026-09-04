@@ -13,11 +13,11 @@
  * that share no context, which is the failure the whole product argues
  * against.
  *
- * Second, `missing` and `unverifiable` are different and stay different.
- * "No MCP servers are configured" and "MCP servers exist but their tool
- * descriptions were not available to read" are opposite situations: one is a
- * small attack surface, the other is an unmeasured one. Collapsing them into
- * "not found" would make an unknown look like a zero.
+ * Second, `not_detected` and `unknown` are different and stay different.
+ * "The configuration was read and declares no MCP servers" and "no
+ * configuration was supplied" are opposite situations: one is a small attack
+ * surface, the other is an unmeasured one. Collapsing them into "not found"
+ * would make an unknown look like a zero.
  */
 
 import { fingerprintMcpServer, parseMcpConfig, type McpServer } from './mcp';
@@ -196,11 +196,21 @@ export function scanForReadiness(input: ScanInput): ReadinessReport {
 
   // --- Model ---------------------------------------------------------------
   const modelKnown = Boolean(input.modelProvider && input.modelName);
+  const modelInferred = !modelKnown && detectedProviders.length > 0;
   fields.push({
     field: 'Model',
-    status: modelKnown ? 'declared' : detectedProviders.length > 0 ? 'inferred' : 'unknown',
+    status: modelKnown ? 'declared' : modelInferred ? 'inferred' : 'unknown',
     value: modelKnown ? `${input.modelProvider}/${input.modelName} ${input.modelVersion ?? '(unpinned)'}` : detectedProviders.join(', ') || undefined,
-    note: modelKnown ? undefined : 'Inferred from dependency and environment names, which indicates a provider is reachable, not which model is used.',
+    // The note is tied to the inference, not merely to the absence of a
+    // declaration. It previously appeared whenever the model was undeclared,
+    // so a scan that detected nothing at all still said "inferred from
+    // dependency and environment names" — describing reasoning it had not
+    // done. Separating the labels made that visible.
+    note: modelKnown
+      ? undefined
+      : modelInferred
+        ? 'Inferred from dependency and environment names, which indicates a provider is reachable, not which model is used.'
+        : 'No provider was declared, and none could be inferred from what was supplied.',
   });
   if (!modelKnown) {
     gap('blocking', 'Model and version not declared',

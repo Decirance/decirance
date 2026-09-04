@@ -255,6 +255,17 @@ check('a value concluded from dependency names is inferred, not detected',
   statusOf(guessedModel, 'Model') === 'inferred',
   `Model guessed from packages produced "${statusOf(guessedModel, 'Model')}". A provider being reachable is not the same as knowing which model runs, and the labels must not imply it is.`);
 
+const noteOf = (report: ReturnType<typeof scanForReadiness>, field: string) =>
+  report.fields.find((f) => f.field === field)?.note ?? '';
+
+// Matches the claim to have reasoned from package and environment names, not
+// the word "inferred" — the note for the unknown case legitimately says no
+// inference was possible, and a looser pattern caught its own fallback.
+const CLAIMS_INFERENCE = /dependency and environment names/;
+check('a field explains an inference only where one was actually made',
+  !CLAIMS_INFERENCE.test(noteOf(noMcp, 'Model')) && CLAIMS_INFERENCE.test(noteOf(guessedModel, 'Model')),
+  `With nothing supplied the Model note read "${noteOf(noMcp, 'Model')}"; with a manifest it read "${noteOf(guessedModel, 'Model')}". A note describing reasoning the scan did not perform is a claim about its own working, and the wrong one.`);
+
 const RETIRED = ['detected', 'missing', 'unverifiable'];
 const allStatuses = [noMcp, emptyMcp, brokenMcp, declaredModel, guessedModel]
   .flatMap((r) => r.fields.map((f) => f.status as string));
