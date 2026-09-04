@@ -17,6 +17,7 @@ import {
   claimsWithoutArgument,
   verifyConfigurationBinding,
   verifyNoAuthorityOutsideOperatingStates,
+  verifyNoAutomaticRestoration,
   EXAMPLE_ARGUMENT_LAYER,
   computeDelta,
   diffMcpServers,
@@ -220,6 +221,11 @@ const binding = verifyConfigurationBinding();
 check('a permit does not authorise a configuration it was not bound to',
   binding.holds,
   `States that authorised a mismatched configuration: ${binding.violations.join(', ')}. This is the property the whole product rests on.`);
+
+const restoration = verifyNoAutomaticRestoration();
+check('no machine-only path returns a suspended permit to operation',
+  restoration.holds,
+  `Machine-actored paths back to operation: ${restoration.paths.join(' | ')}. Suspension is the one action the engine takes alone; if it can also restore, the decision has in effect been delegated to the machine.`);
 
 check('an action on both the permitted and prohibited lists is denied',
   !checkPermitInvariant(

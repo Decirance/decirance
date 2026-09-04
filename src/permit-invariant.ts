@@ -22,7 +22,7 @@
  * grants authority — the only defect class here that could cause harm.
  */
 
-import { ALL_PERMIT_STATES, mayOperate, type PermitState } from './permit-state-machine';
+import { ALL_PERMIT_STATES, mayOperate, transitionsFrom, type PermitState } from './permit-state-machine';
 
 export interface PermitBinding {
   reference: string;
@@ -152,6 +152,57 @@ export function verifyNoAuthorityOutsideOperatingStates(): {
   });
 
   return { holds: violations.length === 0, violations };
+}
+
+/**
+ * Exhaustive check that authority is never restored without a human.
+ *
+ * Suspension is the one action Decirance takes on its own: a material change
+ * invalidates critical evidence and the permit is suspended by the engine,
+ * under a standing organisational rule, with no person in the loop at that
+ * moment. That is defensible only if the machine cannot also undo it. A system
+ * that can stop and restart an agent by itself has, in effect, been granted the
+ * decision — which is the authority this product exists to keep with a person.
+ *
+ * So the property is about paths, not states: from any non-operating state,
+ * every route back to operation must pass through at least one transition whose
+ * actor is `accountable_owner`. It is decided by exhaustive search rather than
+ * asserted, because the failure mode is a single transition added later —
+ * plausible-looking, machine-actored, and quietly closing the loop.
+ *
+ * Returns the offending path when one exists, since "some path is wrong" is not
+ * an actionable finding.
+ */
+export function verifyNoAutomaticRestoration(): {
+  holds: boolean;
+  paths: string[];
+} {
+  const offending: string[] = [];
+
+  for (const start of ALL_PERMIT_STATES) {
+    if (mayOperate(start)) continue;
+
+    // Breadth-first over machine-actored transitions only. If operation is
+    // reachable at all in this restricted graph, no human was required.
+    const seen = new Set<PermitState>([start]);
+    const queue: Array<{ state: PermitState; path: string[] }> = [{ state: start, path: [start] }];
+
+    while (queue.length > 0) {
+      const { state, path } = queue.shift()!;
+      for (const t of transitionsFrom(state)) {
+        if (t.by === 'accountable_owner') continue; // a human decided; not a violation
+        if (mayOperate(t.to)) {
+          offending.push([...path, `-(${t.trigger}/${t.by})->`, t.to].join(' '));
+          continue;
+        }
+        if (seen.has(t.to)) continue;
+        seen.add(t.to);
+        queue.push({ state: t.to, path: [...path, `-(${t.trigger}/${t.by})->`, t.to] });
+      }
+    }
+  }
+
+  return { holds: offending.length === 0, paths: offending };
 }
 
 /**
