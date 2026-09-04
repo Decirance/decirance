@@ -19,6 +19,8 @@ export * from './attestation';
 export * from './scenario-pack';
 export * from './field-guide';
 export * from './evidence-integrity'
+export * from './baseline'
+export * from './example-baseline'
 export * from './criticality'
 export * from './authority'
 export * from './enforcement'

@@ -57,6 +57,11 @@ import {
   type ToolAuthorityContract,
   checkDelegationChain,
   checkSiblings,
+  checkPolicyContainment,
+  baselineDigest,
+  baselineCompleteness,
+  EXAMPLE_BASELINE,
+  EXAMPLE_CONTRACT_POLICY_VIEW,
 } from '../src/index.ts';
 
 let failures = 0;
@@ -697,6 +702,72 @@ check('a compositional risk is reported, never auto-prohibited',
   checkToolAuthority({ operationId: sensitiveRead.operationId, resource: 'case-store',
     dataClass: 'personal' }, [sensitiveRead, externalWrite]).permitted,
   'Whether a pairing is acceptable depends on the context contract and compensating controls. That judgement belongs to a person, not to this engine.');
+
+
+section('Policy containment');
+
+const containment = checkPolicyContainment(EXAMPLE_BASELINE, EXAMPLE_CONTRACT_POLICY_VIEW);
+
+check('a contract that carries an organisational prohibition down is valid',
+  containment.valid,
+  'The reference contract prohibits autonomous external send, eligibility determination and offshore special-category data, exactly as the baseline requires.');
+
+check('an inherited prohibition is reported as inherited, not merely absent',
+  containment.inherited.some((i) => i.includes('external:send_autonomous')),
+  'Showing what was correctly carried down is what makes the omissions legible.');
+
+check('permitting what the organisation denies is a violation',
+  !checkPolicyContainment(EXAMPLE_BASELINE, {
+    ...EXAMPLE_CONTRACT_POLICY_VIEW,
+    permittedActions: [...EXAMPLE_CONTRACT_POLICY_VIEW.permittedActions, 'external:send_autonomous'],
+  }).valid,
+  'A Context Contract may narrow what the organisation allows. It may not widen it.');
+
+check('silently dropping an inherited prohibition is unresolved, not a pass',
+  checkPolicyContainment(EXAMPLE_BASELINE, {
+    ...EXAMPLE_CONTRACT_POLICY_VIEW,
+    prohibitedActions: EXAMPLE_CONTRACT_POLICY_VIEW.prohibitedActions.filter((a) => a !== 'eligibility:determine'),
+  }).findings.some((f) => f.ruleId === 'ORG-002' && f.severity === 'unresolved'),
+  'A prohibition the contract neither permits nor prohibits is not carried down. Silence is not inheritance, and it is also not a breach.');
+
+check('an unmet organisational requirement is unresolved with a remedy',
+  (() => {
+    const f = containment.findings.find((x) => x.ruleId === 'ORG-007');
+    return f?.severity === 'unresolved' && !!f.remedy;
+  })(),
+  'The route to human review is required and unrecorded. The engine can see it is unsatisfied and cannot conclude it is breached — and a finding without a remedy is a complaint.');
+
+check('a rule with no machine predicate is carried as a human obligation, not enforced',
+  containment.humanReviewObligations.some((o) => o.includes('ORG-011')),
+  'Whether a supplier disclosure is adequate is not a property this engine can evaluate. Presenting prose policy as automatically enforced is the overclaim the product exists to argue against.');
+
+check('containment names the exact baseline revision and digest it judged against',
+  containment.baselineRevision === EXAMPLE_BASELINE.revision && containment.baselineDigest.startsWith('sha256:'),
+  'A decision taken under one policy revision must be reconstructable when the policy has moved on.');
+
+check('the baseline digest covers the rules that bind, not the prose around them',
+  baselineDigest(EXAMPLE_BASELINE) !== baselineDigest({
+    ...EXAMPLE_BASELINE,
+    rules: EXAMPLE_BASELINE.rules.map((r) =>
+      r.ruleId === 'ORG-004' ? { ...r, outcome: 'allow' as const } : r),
+  }),
+  'Changing what a rule does must change the digest; editing its wording need not.');
+
+section('Baseline completeness');
+
+check('a baseline covering every required decision is ready for assessment',
+  baselineCompleteness(EXAMPLE_BASELINE).readiness === 'ready_for_assessment',
+  'The seeded baseline is deliberately complete, so the demonstration shows the ordinary case.');
+
+check('missing decisions are named, and each says why it matters',
+  (() => {
+    const r = baselineCompleteness({
+      ...EXAMPLE_BASELINE,
+      rules: EXAMPLE_BASELINE.rules.filter((x) => x.category !== 'incident' && x.category !== 'evidence' && x.category !== 'permit_duration'),
+    });
+    return r.readiness === 'incomplete' && r.missing.length === 3 && r.missing.every((m) => m.whyItMatters.length > 0);
+  })(),
+  'Named gaps, never a percentage. A completeness score invites an organisation to optimise the number instead of taking the decision.');
 
 console.log(`\n${failures === 0 ? 'All checks passed.' : `${failures} CHECK(S) FAILED.`}\n`);
 process.exitCode = failures === 0 ? 0 : 1;
