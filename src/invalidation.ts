@@ -27,7 +27,20 @@ export type ClaimImpact =
   | 'affected'
   | 'invalidated'
   | 'unproven'
-  | 'challenged';
+  | 'challenged'
+  /**
+   * The engine could not decide either way.
+   *
+   * Distinct from `affected`, which is a finding, and from `preserved`, which
+   * is a positive statement that no modelled dependency was severed. `unknown`
+   * says the graph does not cover the question — an unclassified change, or a
+   * dependency the model does not represent.
+   *
+   * Reporting these as `affected` overstated what had been established;
+   * reporting them as `preserved` would have been dangerous. Neither is
+   * honest, which is why the third answer has to exist.
+   */
+  | 'unknown';
 
 export interface GraphEdge {
   kind: EdgeKind;
@@ -106,6 +119,8 @@ export interface DeltaResult {
     invalidated: number;
     unproven: number;
     challenged: number;
+    /** Claims the graph could not decide either way. */
+    unknown: number;
     evidencePreserved: number;
     evidenceInvalidated: number;
     /** Share of claims needing no further work, 0-1. */
@@ -147,6 +162,11 @@ export function computeDelta(input: DeltaInput): DeltaResult {
 
   // Fail closed: an unrecognised configuration difference means the graph
   // cannot be reasoned about, so nothing may be preserved.
+  //
+  // The outcome is `unknown` rather than `affected`. The engine has not found
+  // an impact on these claims; it has failed to look, and those are different
+  // things to tell an accountable person. The work required is identical —
+  // everything is retested — but the reason on the page is now true.
   if (unclassifiedFields.length > 0) {
     return {
       outcomes: claims.map((c) => ({
@@ -154,7 +174,7 @@ export function computeDelta(input: DeltaInput): DeltaResult {
         statement: c.statement,
         domain: c.domain,
         critical: c.critical,
-        impact: 'affected' as const,
+        impact: 'unknown' as const,
         triggeredBy: [],
         path: [],
         invalidatedEvidenceRefs: [],
@@ -165,7 +185,11 @@ export function computeDelta(input: DeltaInput): DeltaResult {
       newObligations: [],
       summary: {
         preserved: 0,
-        affected: claims.length,
+        // Not "affected": the engine has not found an impact on these claims,
+        // it has failed to look. Counting them as findings would overstate what
+        // was established.
+        affected: 0,
+        unknown: claims.length,
         invalidated: 0,
         unproven: 0,
         challenged: 0,
@@ -314,6 +338,7 @@ export function computeDelta(input: DeltaInput): DeltaResult {
     summary: {
       preserved,
       affected: count('affected'),
+      unknown: count('unknown'),
       invalidated: count('invalidated'),
       unproven: newObligations.length,
       challenged: count('challenged'),
@@ -329,6 +354,9 @@ export function computeDelta(input: DeltaInput): DeltaResult {
 /** Claims that must be re-tested, most consequential first. */
 export function reassessmentPlan(result: DeltaResult): ClaimOutcome[] {
   const rank: Record<ClaimImpact, number> = {
+    // "We cannot tell" about a critical claim is not a lesser finding than a
+    // known one, so it sorts alongside invalidation rather than below it.
+    unknown: 0,
     invalidated: 0,
     challenged: 1,
     affected: 2,

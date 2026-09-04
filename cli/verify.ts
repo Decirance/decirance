@@ -62,6 +62,7 @@ import {
   baselineCompleteness,
   EXAMPLE_BASELINE,
   EXAMPLE_CONTRACT_POLICY_VIEW,
+  reassessmentPlan,
 } from '../src/index.ts';
 
 let failures = 0;
@@ -768,6 +769,48 @@ check('missing decisions are named, and each says why it matters',
     return r.readiness === 'incomplete' && r.missing.length === 3 && r.missing.every((m) => m.whyItMatters.length > 0);
   })(),
   'Named gaps, never a percentage. A completeness score invites an organisation to optimise the number instead of taking the decision.');
+
+
+section('Tri-state impact');
+
+const unknownDelta = computeDelta({
+  claims: EXAMPLE_CLAIMS, evidence: EXAMPLE_EVIDENCE, edges: EXAMPLE_EDGES,
+  changes: [], unclassifiedFields: ['someFieldNobodyClassified'],
+  obligations: EXAMPLE_OBLIGATIONS, currentPassportHash: EXAMPLE_PASSPORT_HASHES.v3,
+});
+
+check('an unclassified change yields UNKNOWN, not AFFECTED',
+  unknownDelta.outcomes.every((o) => o.impact === 'unknown'),
+  'The engine has not found an impact on these claims; it has failed to look. Reporting a failure to look as a finding overstates what was established.');
+
+check('UNKNOWN still forces complete reassessment',
+  unknownDelta.fullReassessmentRequired
+    && unknownDelta.outcomes.every((o) => o.requiredTests.length > 0),
+  'Honesty about what is known must not reduce the work. The label changed; the obligation did not.');
+
+check('UNKNOWN is counted separately from AFFECTED',
+  unknownDelta.summary.unknown === EXAMPLE_CLAIMS.length && unknownDelta.summary.affected === 0,
+  'Two different conclusions counted in one column would defeat the distinction the state exists to draw.');
+
+check('nothing is preserved when the graph could not be reasoned about',
+  unknownDelta.summary.preserved === 0 && unknownDelta.summary.reassessmentAvoided === 0,
+  'A saving claimed on an undecidable graph is the false-preservation failure this project treats as the most severe.');
+
+check('UNKNOWN sorts with the most urgent work',
+  reassessmentPlan(unknownDelta)[0].impact === 'unknown',
+  '"We cannot tell" about a critical claim is not a lesser finding than a known one.');
+
+check('a classified change still yields a decided two-sided result',
+  (() => {
+    const d = computeDelta({
+      claims: EXAMPLE_CLAIMS, evidence: EXAMPLE_EVIDENCE, edges: EXAMPLE_EDGES,
+      changes: diffPassports(EXAMPLE_PASSPORT_V3, EXAMPLE_PASSPORT_V5_CONTAINMENT).changes,
+      unclassifiedFields: [],
+      obligations: EXAMPLE_OBLIGATIONS, currentPassportHash: EXAMPLE_PASSPORT_HASHES.v3,
+    });
+    return d.summary.unknown === 0 && d.summary.preserved > 0 && d.summary.invalidated > 0;
+  })(),
+  'Adding a third state must not make the engine hedge on questions it can actually decide. UNAFFECTED remains a positive finding.');
 
 console.log(`\n${failures === 0 ? 'All checks passed.' : `${failures} CHECK(S) FAILED.`}\n`);
 process.exitCode = failures === 0 ? 0 : 1;
