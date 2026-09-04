@@ -16,6 +16,7 @@ import {
   checkPermitInvariant,
   claimsWithoutArgument,
   verifyConfigurationBinding,
+  scanForReadiness,
   verifyNoAuthorityOutsideOperatingStates,
   verifyNoAutomaticRestoration,
   EXAMPLE_ARGUMENT_LAYER,
@@ -209,6 +210,57 @@ check('an unaltered attestation verifies', verifyAttestation(attestation),
 check('an altered attestation does not verify',
   !verifyAttestation({ ...attestation, decision: 'production' }),
   'Tamper evidence is the only integrity property this record claims.');
+
+
+section('Scan provenance');
+
+/**
+ * The distinction the labels exist to carry.
+ *
+ * A scan that reports "no MCP servers" identically whether it read a config or
+ * was handed nothing is worse than a scan that says nothing: it converts an
+ * absence of evidence into evidence of absence, and a reviewer has no way to
+ * tell which they are looking at. These checks decide that the two cases
+ * produce different labels, and that the retired vocabulary cannot come back.
+ */
+const statusOf = (report: ReturnType<typeof scanForReadiness>, field: string) =>
+  report.fields.find((f) => f.field === field)?.status;
+
+const noMcp = scanForReadiness({ owner: 'A Person', purpose: 'Test' });
+check('a field with nothing supplied is unknown, not absent',
+  statusOf(noMcp, 'MCP servers') === 'unknown',
+  `MCP status with no config supplied was "${statusOf(noMcp, 'MCP servers')}". Reporting an unsupplied field as absent turns a gap in the submission into a clean result.`);
+
+const emptyMcp = scanForReadiness({ mcpConfig: JSON.stringify({ mcpServers: {} }) });
+check('a field read from a supplied artefact and genuinely empty is not_detected',
+  statusOf(emptyMcp, 'MCP servers') === 'not_detected',
+  `MCP status with an empty but readable config was "${statusOf(emptyMcp, 'MCP servers')}". This case is real information and must be distinguishable from silence.`);
+
+check('an unsupplied field and an empty-but-read field do not share a label',
+  statusOf(noMcp, 'MCP servers') !== statusOf(emptyMcp, 'MCP servers'),
+  'Absence of evidence and evidence of absence resolved to the same label. That is the failure this vocabulary exists to prevent.');
+
+const brokenMcp = scanForReadiness({ mcpConfig: '{ not json' });
+check('an unreadable artefact is unknown, never not_detected',
+  statusOf(brokenMcp, 'MCP servers') === 'unknown',
+  `Unreadable config produced "${statusOf(brokenMcp, 'MCP servers')}". Malformed input must not be able to improve a verdict by making a risk disappear.`);
+
+const declaredModel = scanForReadiness({ modelProvider: 'anthropic', modelName: 'claude-opus-5', modelVersion: '2026-05' });
+check('a stated value is declared',
+  statusOf(declaredModel, 'Model') === 'declared',
+  `Declared model produced "${statusOf(declaredModel, 'Model')}".`);
+
+const guessedModel = scanForReadiness({ packageManifest: JSON.stringify({ dependencies: { '@anthropic-ai/sdk': '^1.0.0' } }) });
+check('a value concluded from dependency names is inferred, not detected',
+  statusOf(guessedModel, 'Model') === 'inferred',
+  `Model guessed from packages produced "${statusOf(guessedModel, 'Model')}". A provider being reachable is not the same as knowing which model runs, and the labels must not imply it is.`);
+
+const RETIRED = ['detected', 'missing', 'unverifiable'];
+const allStatuses = [noMcp, emptyMcp, brokenMcp, declaredModel, guessedModel]
+  .flatMap((r) => r.fields.map((f) => f.status as string));
+check('no retired provenance label survives anywhere in a report',
+  allStatuses.every((st) => !RETIRED.includes(st)),
+  `Retired labels still emitted: ${[...new Set(allStatuses.filter((st) => RETIRED.includes(st)))].join(', ')}. The old vocabulary conflated confidence levels the new one separates.`);
 
 
 section('Permit invariant');

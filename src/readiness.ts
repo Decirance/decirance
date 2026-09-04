@@ -44,7 +44,30 @@ export interface ScanInput {
   evidenceRefs?: string[];
 }
 
-export type FieldStatus = 'declared' | 'detected' | 'missing' | 'unverifiable';
+/**
+ * How a field's value came to be known.
+ *
+ * The previous four labels conflated two distinctions a reviewer needs.
+ * `detected` covered both a fact read straight out of a supplied configuration
+ * and a fact guessed from dependency names — very different confidence,
+ * presented identically. And `missing` covered both "the file was read and the
+ * thing is genuinely absent" and "nothing was supplied, so we cannot say",
+ * which is the difference between information and the absence of it.
+ *
+ * Absence of evidence is the one thing this scan must never report as evidence
+ * of absence, so it gets its own label rather than sharing one.
+ */
+export type FieldStatus =
+  /** Stated by the submitter or a manifest. An assertion, trusted as such, not verified. */
+  | 'declared'
+  /** Read directly out of a supplied artefact. */
+  | 'directly_detected'
+  /** Concluded from indirect signal such as dependency names. Weaker than detection. */
+  | 'inferred'
+  /** The artefact was read and the thing is genuinely not there. This is information. */
+  | 'not_detected'
+  /** Nothing was supplied, or what was supplied could not be read. This is not information. */
+  | 'unknown';
 
 export interface ScanField {
   field: string;
@@ -126,7 +149,7 @@ export function scanForReadiness(input: ScanInput): ReadinessReport {
   const mcpServers = mcp.servers.map((s) => ({ ...s, fingerprint: fingerprintMcpServer(s) }));
 
   if (!input.mcpConfig) {
-    fields.push({ field: 'MCP servers', status: 'unverifiable', note: 'No configuration supplied. Whether the agent uses MCP is unknown, not none.' });
+    fields.push({ field: 'MCP servers', status: 'unknown', note: 'No configuration supplied. Whether the agent uses MCP is unknown, not none.' });
   } else if (!mcp.readable) {
     // Unreadable is not "none". Reporting a parse failure as "declares no
     // servers" made malformed input improve the verdict — the blocking gap for
@@ -134,7 +157,7 @@ export function scanForReadiness(input: ScanInput): ReadinessReport {
     // the failure this scan exists to catch.
     fields.push({
       field: 'MCP servers',
-      status: 'unverifiable',
+      status: 'unknown',
       note: `Configuration supplied but could not be parsed: ${mcp.warnings[0] ?? 'unreadable'}. Whether the agent uses MCP is unknown, not none.`,
     });
     gaps.push({
@@ -145,9 +168,9 @@ export function scanForReadiness(input: ScanInput): ReadinessReport {
       action: 'Correct the configuration so it parses, then run the scan again.',
     });
   } else if (mcpServers.length === 0) {
-    fields.push({ field: 'MCP servers', status: 'missing', note: 'Configuration supplied and read; it declares no servers.' });
+    fields.push({ field: 'MCP servers', status: 'not_detected', note: 'Configuration supplied and read; it declares no servers.' });
   } else {
-    fields.push({ field: 'MCP servers', status: 'detected', value: mcpServers.map((s) => s.name).join(', ') });
+    fields.push({ field: 'MCP servers', status: 'directly_detected', value: mcpServers.map((s) => s.name).join(', ') });
     recommendedTests.add('mcp-manifest-signature-check');
     recommendedTests.add('tool-description-poisoning-pack');
 
@@ -175,7 +198,7 @@ export function scanForReadiness(input: ScanInput): ReadinessReport {
   const modelKnown = Boolean(input.modelProvider && input.modelName);
   fields.push({
     field: 'Model',
-    status: modelKnown ? 'declared' : detectedProviders.length > 0 ? 'detected' : 'missing',
+    status: modelKnown ? 'declared' : detectedProviders.length > 0 ? 'inferred' : 'unknown',
     value: modelKnown ? `${input.modelProvider}/${input.modelName} ${input.modelVersion ?? '(unpinned)'}` : detectedProviders.join(', ') || undefined,
     note: modelKnown ? undefined : 'Inferred from dependency and environment names, which indicates a provider is reachable, not which model is used.',
   });
@@ -194,7 +217,7 @@ export function scanForReadiness(input: ScanInput): ReadinessReport {
   const promptDigest = input.systemPrompt ? digestOf(input.systemPrompt) : undefined;
   fields.push({
     field: 'System prompt',
-    status: promptDigest ? 'declared' : 'missing',
+    status: promptDigest ? 'declared' : 'unknown',
     value: promptDigest,
     note: promptDigest ? 'Hashed on receipt; the text is not retained.' : undefined,
   });
@@ -208,7 +231,7 @@ export function scanForReadiness(input: ScanInput): ReadinessReport {
   const permissions = input.permissions ?? [];
   fields.push({
     field: 'Permissions',
-    status: permissions.length > 0 ? 'declared' : 'missing',
+    status: permissions.length > 0 ? 'declared' : 'unknown',
     value: permissions.join(', ') || undefined,
   });
   if (permissions.length === 0) {
@@ -232,13 +255,13 @@ export function scanForReadiness(input: ScanInput): ReadinessReport {
   }
 
   // --- Ownership and context ----------------------------------------------
-  fields.push({ field: 'Accountable owner', status: input.owner ? 'declared' : 'missing', value: input.owner });
+  fields.push({ field: 'Accountable owner', status: input.owner ? 'declared' : 'unknown', value: input.owner });
   if (!input.owner) {
     gap('blocking', 'No accountable owner',
       'A permit is a person accepting accountability. With no named owner there is nobody to issue one.',
       'Name the individual who will sign the Deployment Permit.');
   }
-  fields.push({ field: 'Purpose', status: input.purpose ? 'declared' : 'missing', value: input.purpose });
+  fields.push({ field: 'Purpose', status: input.purpose ? 'declared' : 'unknown', value: input.purpose });
   if (!input.purpose) {
     gap('material', 'No stated purpose',
       'Assurance is context-specific. Without a purpose there is no context to assure against.',
@@ -249,7 +272,7 @@ export function scanForReadiness(input: ScanInput): ReadinessReport {
   const dataSources = input.dataSources ?? [];
   fields.push({
     field: 'Data sources',
-    status: dataSources.length > 0 ? 'declared' : 'unverifiable',
+    status: dataSources.length > 0 ? 'declared' : 'unknown',
     value: dataSources.join(', ') || undefined,
     note: dataSources.length === 0 ? 'Not supplied. Reachable data is unknown rather than none.' : undefined,
   });
@@ -262,7 +285,7 @@ export function scanForReadiness(input: ScanInput): ReadinessReport {
   const evidenceRefs = input.evidenceRefs ?? [];
   fields.push({
     field: 'Existing evidence',
-    status: evidenceRefs.length > 0 ? 'declared' : 'missing',
+    status: evidenceRefs.length > 0 ? 'declared' : 'unknown',
     value: evidenceRefs.join(', ') || undefined,
   });
   if (evidenceRefs.length === 0) {
