@@ -174,11 +174,71 @@ export function scanForReadiness(input: ScanInput): ReadinessReport {
     recommendedTests.add('mcp-manifest-signature-check');
     recommendedTests.add('tool-description-poisoning-pack');
 
+    // --- Local (stdio) execution surface ---------------------------------
+    //
+    // Remote servers were scrutinised — unspecified auth, unapproved endpoints —
+    // and local ones were not, which is backwards. A remote server reached over
+    // HTTPS with a scoped token is frequently the *safer* arrangement. A stdio
+    // server is a command this machine runs, with the user's own privileges,
+    // often fetched at launch from a public registry and handed a directory or a
+    // database.
+    //
+    // The most common real config shape was therefore receiving less scrutiny
+    // than our own demonstration sample, from a product whose stated
+    // differentiator is MCP-aware assurance.
+    //
+    // These read `packageRef`, which is the command and its arguments. Nothing
+    // here inspects `env`: the parser never retains it, and it is where the
+    // secrets are.
+    const local = mcpServers.filter((s) => s.transport === 'stdio');
+    if (local.length > 0) {
+      const unpinned = local.filter((s) =>
+        /(^|\s)(npx|uvx|pipx|bunx)(\s|$)/.test(s.packageRef ?? '')
+        && !/@\d+\.\d+/.test(s.packageRef ?? ''));
+      if (unpinned.length > 0) {
+        gap('material', 'Local server fetched at launch without a pinned version',
+          `${unpinned.map((s) => `"${s.name}"`).join(', ')} ${unpinned.length === 1 ? 'is' : 'are'} started with a launcher that resolves and executes the latest published package. The code the agent runs can change between two launches with no change to this configuration, which invalidates any behavioural evidence collected against it without anyone editing anything.`,
+          'Pin an exact version in the command, or vendor the server and reference the pinned artefact.');
+        recommendedTests.add('mcp-manifest-signature-check');
+      }
+
+      const containerised = local.filter((s) => /(^|\s)(docker|podman|nerdctl)(\s|$)/.test(s.packageRef ?? ''));
+      if (containerised.length > 0) {
+        gap('material', 'Local server runs a container at agent start',
+          `${containerised.map((s) => `"${s.name}"`).join(', ')} ${containerised.length === 1 ? 'invokes' : 'invoke'} a container runtime. Whatever the image contains executes with the launching user's access to the host daemon, and the image reference is not itself evidence of what runs.`,
+          'Record the image digest rather than a tag, and state what the container is permitted to reach.');
+      }
+
+      // Absolute paths passed as arguments are a scope grant in disguise.
+      const withPaths = local
+        .map((s) => ({ s, paths: (s.packageRef ?? '').split(/\s+/).filter((a) => /^([A-Za-z]:[\\/]|\/)[^\s]+/.test(a)) }))
+        .filter((x) => x.paths.length > 0);
+      if (withPaths.length > 0) {
+        gap('material', 'Filesystem scope granted through command arguments',
+          `${withPaths.map((x) => `"${x.s.name}" (${x.paths.join(', ')})`).join('; ')}. A directory handed to a server on its command line is a permission, but it appears nowhere in the declared scopes, so it is invisible to a review that reads scopes alone.`,
+          'Declare the filesystem scope alongside the other permissions so it can be assessed and re-checked when it changes.');
+      }
+
+      const withDsn = local.filter((s) =>
+        /(postgres(ql)?|mysql|mongodb(\+srv)?|redis|mssql):\/\//i.test(s.packageRef ?? ''));
+      if (withDsn.length > 0) {
+        gap('blocking', 'Database connection string on a command line',
+          `${withDsn.map((s) => `"${s.name}"`).join(', ')} ${withDsn.length === 1 ? 'carries' : 'carry'} a connection string in its arguments. That is a data scope granted outside the declared permissions, and a connection string on a command line is visible to every process on the machine — if it contained a password, treat that password as disclosed.`,
+          'Move the credential to a secret store, declare the database scope explicitly, and rotate anything that has been passed this way.');
+      }
+
+      if (local.some((s) => s.approved !== true)) {
+        gap('material', 'Local servers carry no approval record',
+          'A local server executes code on the machine running the agent. None of these records an approval, so nothing distinguishes a reviewed server from one a developer added last week.',
+          'Record who approved each local server and when, in the same place remote approvals are held.');
+      }
+    }
+
     const undescribed = mcpServers.filter((s) => s.tools.length === 0 || s.tools.every((t) => !t.description));
     if (undescribed.length > 0) {
       gap('material', 'MCP tool descriptions not available',
         'A tool description is text the model reads as instruction, and it is the surface a poisoning attack changes while leaving endpoint, schema and version untouched. It cannot be fingerprinted while unread.',
-        `Query ${undescribed.map((s) => `"${s.name}"`).join(', ')} for its advertised tools and re-scan.`);
+        `Query ${undescribed.map((s) => `"${s.name}"`).join(', ')} for ${undescribed.length === 1 ? 'its' : 'their'} advertised tools and re-scan.`);
     }
     const unapproved = mcpServers.filter((s) => s.approved !== true);
     if (unapproved.length > 0) {

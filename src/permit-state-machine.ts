@@ -265,6 +265,75 @@ export const PERMIT_TRANSITIONS: readonly PermitTransition[] = [
   },
 ];
 
+/**
+ * Protective actions a person may take, distinct from the engine's.
+ *
+ * The lifecycle was written for engine-driven transitions: evidence is
+ * invalidated, so the permit suspends. An accountable owner was then given a
+ * decision surface and had nothing of their own to call, so the interface
+ * reached for `suspend_material_change` — and recorded a human's precautionary
+ * judgement as an engine assertion that evidence had been invalidated.
+ *
+ * That is a false entry in the one artefact this product asks people to trust.
+ * An auditor reading it concludes a material change occurred on that date. None
+ * had. The attestation then binds a named person to a claim they did not make.
+ *
+ * These triggers exist so a human pause is recorded as a human pause. They are
+ * deliberately *not* synonyms: the engine's suspension asserts a fact about
+ * evidence, and these assert a judgement about risk. Both stop the agent; only
+ * one of them is a finding.
+ *
+ * There is no human equivalent of `expire`, because time passing is not a
+ * decision anyone takes.
+ */
+export const HUMAN_PROTECTIVE_TRANSITIONS: PermitTransition[] = [
+  {
+    from: 'active',
+    to: 'suspended',
+    trigger: 'suspend_precautionary',
+    by: 'accountable_owner',
+    source: 'inferred',
+    description:
+      'The accountable owner paused operation on their own judgement. No material change is asserted; the reason is recorded on the event.',
+  },
+  {
+    from: 'pilot',
+    to: 'suspended',
+    trigger: 'suspend_precautionary',
+    by: 'accountable_owner',
+    source: 'inferred',
+    description:
+      'The accountable owner paused a supervised pilot on their own judgement.',
+  },
+  {
+    from: 'restricted',
+    to: 'suspended',
+    trigger: 'suspend_precautionary',
+    by: 'accountable_owner',
+    source: 'inferred',
+    description:
+      'The accountable owner paused an already restricted permit on their own judgement.',
+  },
+  {
+    from: 'active',
+    to: 'restricted',
+    trigger: 'restrict_precautionary',
+    by: 'accountable_owner',
+    source: 'inferred',
+    description:
+      'The accountable owner reduced authority on their own judgement, without an evidence finding requiring it.',
+  },
+  {
+    from: 'pilot',
+    to: 'restricted',
+    trigger: 'restrict_precautionary',
+    by: 'accountable_owner',
+    source: 'inferred',
+    description:
+      'The accountable owner reduced the scope of a supervised pilot on their own judgement.',
+  },
+];
+
 /** States from which no transition is possible. */
 export const TERMINAL_STATES: readonly PermitState[] = ['rejected', 'revoked'];
 
@@ -314,8 +383,21 @@ export function isTerminal(state: PermitState): boolean {
   return TERMINAL_STATES.includes(state);
 }
 
+/**
+ * Every transition the machine has, in one place.
+ *
+ * Three arrays existed and `transitionsFrom` spread two of them, so adding a
+ * group meant remembering to widen a filter. The exhaustiveness checks read
+ * this, which is what makes them checks rather than samples.
+ */
+export const ALL_TRANSITIONS: readonly PermitTransition[] = [
+  ...PERMIT_TRANSITIONS,
+  ...SUPERSESSION_TRANSITIONS,
+  ...HUMAN_PROTECTIVE_TRANSITIONS,
+];
+
 export function transitionsFrom(state: PermitState): PermitTransition[] {
-  return [...PERMIT_TRANSITIONS, ...SUPERSESSION_TRANSITIONS].filter((t) => t.from === state);
+  return ALL_TRANSITIONS.filter((t) => t.from === state);
 }
 
 export type TransitionResult =

@@ -22,7 +22,15 @@
  * grants authority — the only defect class here that could cause harm.
  */
 
-import { ALL_PERMIT_STATES, mayOperate, transitionsFrom, type PermitState } from './permit-state-machine';
+import {
+  ALL_PERMIT_STATES,
+  ALL_TRANSITIONS,
+  isTerminal,
+  mayOperate,
+  transitionsFrom,
+  type ActorRole,
+  type PermitState,
+} from './permit-state-machine';
 
 export interface PermitBinding {
   reference: string;
@@ -203,6 +211,69 @@ export function verifyNoAutomaticRestoration(): {
   }
 
   return { holds: offending.length === 0, paths: offending };
+}
+
+/**
+ * Every trigger belongs to exactly one actor role.
+ *
+ * This is the property whose absence produced a false audit entry. The decision
+ * surface offered a human "suspend the permit" and wired it to
+ * `suspend_material_change` — a trigger the machine owns, whose whole meaning
+ * is "evidence was invalidated". A precautionary human pause was therefore
+ * written into the permit history as an engine finding of material change, and
+ * the attestation bound a named person to an assertion they never made.
+ *
+ * Sharing a trigger between roles is always this bug: the trigger name is what
+ * the audit log records, so two actors sharing one name means the log cannot
+ * distinguish who acted or on what grounds. A human action needs a human verb.
+ */
+export function verifyTriggersHaveOneActor(): {
+  holds: boolean;
+  shared: Array<{ trigger: string; roles: ActorRole[] }>;
+} {
+  const byTrigger = new Map<string, Set<ActorRole>>();
+  for (const t of ALL_TRANSITIONS) {
+    const roles = byTrigger.get(t.trigger) ?? new Set<ActorRole>();
+    roles.add(t.by);
+    byTrigger.set(t.trigger, roles);
+  }
+  const shared = [...byTrigger.entries()]
+    .filter(([, roles]) => roles.size > 1)
+    .map(([trigger, roles]) => ({ trigger, roles: [...roles] }));
+  return { holds: shared.length === 0, shared };
+}
+
+/**
+ * From any operating state, the accountable owner can act proportionately.
+ *
+ * The second half of the same defect, and the first version of this check was
+ * too weak to catch it: it asked only whether the owner had *an* action, and
+ * `revoke` is owner-actored from every operating state, so it passed while the
+ * defect was present. Existence was never the question.
+ *
+ * The question is proportionality. Before the human triggers existed, an owner
+ * watching an agent they were uneasy about could destroy the permit or do
+ * nothing — every measure in between belonged to the engine, and could only be
+ * reached by asserting an evidence finding that had not occurred. A decision
+ * surface whose only human verb is "revoke" is not a decision surface; it is a
+ * kill switch with a form attached.
+ *
+ * So: from every operating state the owner must have at least one action that
+ * pauses or reduces authority *without* terminating the permit. Terminal moves
+ * are excluded deliberately — they are exactly what was already there.
+ */
+export function verifyOwnerCanActProportionately(): {
+  holds: boolean;
+  strandedStates: PermitState[];
+} {
+  const strandedStates = ALL_PERMIT_STATES.filter((state) => {
+    if (!mayOperate(state)) return false;
+    return !transitionsFrom(state).some((t) =>
+      t.by === 'accountable_owner'
+      && !isTerminal(t.to)
+      && !mayOperate(t.to));
+  });
+  return { holds: strandedStates.length === 0, strandedStates };
 }
 
 /**

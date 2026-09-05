@@ -19,6 +19,8 @@ import {
   scanForReadiness,
   verifyNoAuthorityOutsideOperatingStates,
   verifyNoAutomaticRestoration,
+  verifyTriggersHaveOneActor,
+  verifyOwnerCanActProportionately,
   EXAMPLE_ARGUMENT_LAYER,
   computeDelta,
   diffMcpServers,
@@ -266,6 +268,66 @@ check('a field explains an inference only where one was actually made',
   !CLAIMS_INFERENCE.test(noteOf(noMcp, 'Model')) && CLAIMS_INFERENCE.test(noteOf(guessedModel, 'Model')),
   `With nothing supplied the Model note read "${noteOf(noMcp, 'Model')}"; with a manifest it read "${noteOf(guessedModel, 'Model')}". A note describing reasoning the scan did not perform is a claim about its own working, and the wrong one.`);
 
+/**
+ * Local servers are scrutinised at least as hard as remote ones.
+ *
+ * The scan reported unspecified auth and unapproved endpoints for remote
+ * servers and said nothing at all about local ones — which is backwards. A
+ * remote server reached over HTTPS with a scoped token is often the safer
+ * arrangement; a stdio server is a command this machine runs with the user's
+ * own privileges, frequently fetched from a public registry at launch and
+ * handed a directory or a database.
+ *
+ * The fixture below is the shape a real Claude Desktop or Cursor config takes,
+ * which is exactly what an engineer pastes in.
+ */
+const realWorldStdio = scanForReadiness({
+  mcpConfig: JSON.stringify({
+    mcpServers: {
+      filesystem: { command: 'npx', args: ['-y', '@modelcontextprotocol/server-filesystem', '/Users/me/casework'] },
+      github: { command: 'docker', args: ['run', '-i', '--rm', 'ghcr.io/github/github-mcp-server'] },
+      postgres: { command: 'uvx', args: ['mcp-server-postgres', 'postgresql://app:pw@db.internal:5432/casework'] },
+    },
+  }),
+  owner: 'A Person',
+  purpose: 'Casework drafting',
+});
+const stdioTitles = realWorldStdio.gaps.map((g) => g.title).join(' | ');
+
+check('an unpinned launcher command is reported',
+  /without a pinned version/.test(stdioTitles),
+  `Gaps raised: ${stdioTitles}. A server started with "npx -y" runs whatever was published most recently, so the code under assessment can change with no change to any configuration — the silent invalidation this product exists to catch.`);
+
+check('a container run at agent start is reported',
+  /runs a container/.test(stdioTitles),
+  `Gaps raised: ${stdioTitles}. A container invocation is arbitrary local execution with the launching user's access to the host daemon.`);
+
+check('a filesystem path passed as an argument is reported as a scope grant',
+  /Filesystem scope granted/.test(stdioTitles),
+  `Gaps raised: ${stdioTitles}. A directory on a command line is a permission that appears in no declared scope, so a review reading scopes alone cannot see it.`);
+
+check('a database connection string on a command line is blocking',
+  realWorldStdio.gaps.some((g) => /connection string/.test(g.title) && g.severity === 'blocking'),
+  `Gaps raised: ${stdioTitles}. A DSN in argv is a data scope granted outside the declared permissions, and visible to every process on the machine.`);
+
+check('a local server without an approval record is reported',
+  /Local servers carry no approval record/.test(stdioTitles),
+  `Gaps raised: ${stdioTitles}. Remote servers were checked for approval and local ones — which execute code on the host — were not.`);
+
+check('the scan never echoes a secret it was given',
+  !JSON.stringify(scanForReadiness({
+    mcpConfig: JSON.stringify({
+      mcpServers: {
+        github: {
+          command: 'docker',
+          args: ['run', 'ghcr.io/github/github-mcp-server'],
+          env: { GITHUB_PERSONAL_ACCESS_TOKEN: 'ghp_sentinel_value_9f2b' },
+        },
+      },
+    }),
+  })).includes('ghp_sentinel_value_9f2b'),
+  'A token supplied in env appeared somewhere in the scan output. The parser must never retain env values, and nothing downstream may reproduce them.');
+
 const RETIRED = ['detected', 'missing', 'unverifiable'];
 const allStatuses = [noMcp, emptyMcp, brokenMcp, declaredModel, guessedModel]
   .flatMap((r) => r.fields.map((f) => f.status as string));
@@ -284,6 +346,16 @@ const binding = verifyConfigurationBinding();
 check('a permit does not authorise a configuration it was not bound to',
   binding.holds,
   `States that authorised a mismatched configuration: ${binding.violations.join(', ')}. This is the property the whole product rests on.`);
+
+const oneActor = verifyTriggersHaveOneActor();
+check('every trigger belongs to exactly one actor role',
+  oneActor.holds,
+  `Shared triggers: ${oneActor.shared.map((x) => `${x.trigger} (${x.roles.join(', ')})`).join('; ')}. The trigger name is what the audit log records, so two actors sharing one means the record cannot say who acted or on what grounds — which is how a human precautionary pause got written as an engine finding of material change.`);
+
+const ownerCanAct = verifyOwnerCanActProportionately();
+check('the accountable owner can pause or reduce, not only destroy, from every operating state',
+  ownerCanAct.holds,
+  `Operating states where the owner's only move is revocation: ${ownerCanAct.strandedStates.join(', ')}. Every proportionate measure then belongs to the engine, reachable only by asserting an evidence finding that has not occurred — which is a kill switch with a form attached, not a decision surface.`);
 
 const restoration = verifyNoAutomaticRestoration();
 check('no machine-only path returns a suspended permit to operation',
