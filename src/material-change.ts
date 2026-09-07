@@ -75,6 +75,36 @@ export type MaterialChangeKind =
   | 'credential_scope'
   | 'cosmetic_metadata';
 
+/**
+ * Every change kind, as data.
+ *
+ * The type alone cannot be enumerated at runtime, so anything that needs to
+ * reason over the whole taxonomy — the dependency review pack, the benchmark
+ * harness, a coverage report — was reduced to hand-copying the list. A second
+ * copy is the defect this project keeps finding in itself: the permit
+ * invariant had one, and it silently checked a subset of the state space.
+ *
+ * Kept adjacent to the union and asserted against it by `check:taxonomy`, so a
+ * kind added to one and not the other fails rather than drifts.
+ */
+export const MATERIAL_CHANGE_KINDS: MaterialChangeKind[] = [
+  'model_version', 'model_provider', 'system_prompt',
+  'memory_config', 'tool_added', 'tool_removed',
+  'tool_schema_changed', 'permission_granted', 'permission_revoked',
+  'data_source_added', 'data_source_removed', 'autonomy_level',
+  'human_oversight', 'guardrail_config', 'identity_binding',
+  'deployment_environment', 'dependency_provider', 'retrieval_service',
+  'third_party_dependency', 'recovery_objective', 'provider_plan',
+  'account_binding', 'data_processing_terms', 'data_residency',
+  'entitlement_expiry', 'mcp_server_added', 'mcp_server_changed',
+  'memory_write_policy', 'model_artifact_digest', 'index_content_source',
+  'network_egress', 'permitted_destination', 'sandbox_image',
+  'package_registry', 'shared_storage', 'inter_agent_channel',
+  'agent_concurrency', 'safety_classifier', 'logging_destination',
+  'monitoring_plane', 'evaluation_harness', 'scorer_config',
+  'shutdown_mechanism', 'credential_scope', 'cosmetic_metadata',
+];
+
 export type AssuranceDomain = 'cyber' | 'resilience' | 'both';
 
 /**
