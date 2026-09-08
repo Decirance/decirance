@@ -17,6 +17,8 @@ import {
   claimsWithoutArgument,
   verifyConfigurationBinding,
   scanForReadiness,
+  validateSubmission,
+  inspectAdapter,
   verifyNoAuthorityOutsideOperatingStates,
   verifyNoAutomaticRestoration,
   verifyTriggersHaveOneActor,
@@ -335,6 +337,107 @@ check('no retired provenance label survives anywhere in a report',
   allStatuses.every((st) => !RETIRED.includes(st)),
   `Retired labels still emitted: ${[...new Set(allStatuses.filter((st) => RETIRED.includes(st)))].join(', ')}. The old vocabulary conflated confidence levels the new one separates.`);
 
+
+section('Evidence ingestion');
+
+/**
+ * A submission that names no scope is refused.
+ *
+ * Evidence not tied to a configuration is a result, and the whole delta engine
+ * exists to catch results being applied to a system they were not collected
+ * against. Accepting one and defaulting the scope to "current" would create
+ * exactly that defect at the point of entry.
+ */
+const unscoped = validateSubmission({
+  ref: 'E-1', title: 't', detail: 'd', sourceKind: 'manual', route: 'manual',
+  owner: 'Someone', collectedAt: '2026-09-01', claimsSupported: ['C-01'], quality: {},
+});
+check('evidence with no passport scope is refused',
+  !unscoped.ok && unscoped.issues.some((i) => i.field === 'scopePassportHash'),
+  'A submission with no scope was accepted. It would attach to whatever is running now, which is the silent misapplication this product exists to prevent.');
+
+const orphan = validateSubmission({
+  ref: 'E-2', title: 't', detail: 'd', sourceKind: 'manual', route: 'manual',
+  owner: 'Someone', collectedAt: '2026-09-01', scopePassportHash: 'sha256:x',
+  claimsSupported: [], quality: {},
+});
+check('evidence that speaks to no claim is refused',
+  !orphan.ok,
+  'An artefact supporting nothing was accepted. It makes a case look well-evidenced while answering no question in it.');
+
+const partial = validateSubmission({
+  ref: 'E-3', title: 't', detail: 'd', sourceKind: 'inspect_eval', route: 'adapter',
+  owner: 'Trust Engineering', collectedAt: '2026-09-01', scopePassportHash: 'sha256:x',
+  claimsSupported: ['C-01'], quality: { provenance: 90 },
+});
+check('a partially assessed submission is accepted and its gaps named',
+  partial.ok && partial.warnings.some((w) => w.field === 'quality'),
+  'Partial quality must be accepted with the unassessed dimensions named. Absence is a more useful statement than a number nobody stands behind.');
+
+check('a quality value outside 0-100 is refused',
+  !validateSubmission({
+    ref: 'E-4', title: 't', detail: 'd', sourceKind: 'manual', route: 'manual',
+    owner: 'Someone', collectedAt: '2026-09-01', scopePassportHash: 'sha256:x',
+    claimsSupported: ['C-01'], quality: { coverage: 140 },
+  }).ok,
+  'A dimension outside the scale was accepted.');
+
+section('Inspect adapter');
+
+const INSPECT_LOG = {
+  status: 'success',
+  eval: {
+    task: 'injection_resistance',
+    task_id: 'tid_abc123',
+    run_id: 'run_def456',
+    model: 'anthropic/claude-sonnet-5',
+    created: '2026-09-01T10:00:00Z',
+    config: { seed: 42 },
+    revision: { type: 'git', origin: 'https://example.invalid/evals', commit: 'a1b2c3d' },
+  },
+  results: {
+    total_samples: 200,
+    completed_samples: 200,
+    scores: [{ name: 'accuracy', scorer: 'match', metrics: { accuracy: { name: 'accuracy', value: 0.985 } } }],
+  },
+};
+const ctx = {
+  scopePassportHash: EXAMPLE_PASSPORT_HASHES.v3,
+  owner: 'Trust Engineering',
+  claimForTest: (t: string) => (t === 'injection_resistance' ? 'C-04' : undefined),
+};
+
+const parsed = inspectAdapter.parse(INSPECT_LOG, ctx);
+check('a complete Inspect run produces a valid submission',
+  parsed.length === 1 && parsed[0].ok,
+  `Adapter output: ${JSON.stringify(parsed[0])}`);
+
+check('the adapter refuses to guess the scope',
+  !inspectAdapter.parse(INSPECT_LOG, { ...ctx, scopePassportHash: '' })[0].ok,
+  'The adapter accepted a run with no passport digest. An Inspect log records the model and task but not the agent permissions, tools or data sources, so a scope derived from it would look scoped and not be.');
+
+check('an unmapped task is refused rather than attached to a guess',
+  !inspectAdapter.parse(INSPECT_LOG, { ...ctx, claimForTest: () => undefined })[0].ok,
+  'The adapter invented a claim mapping. Which evaluation bears on which claim is the same class of judgement as the severedBy dependencies, and burying it in a file parser hides the most contestable step of the pipeline.');
+
+check('an incomplete run is not admitted as a result',
+  !inspectAdapter.parse({ ...INSPECT_LOG, status: 'error' }, ctx)[0].ok,
+  'A failed run was accepted. It would read as an absence of findings rather than an absence of evidence.');
+
+const seeded = inspectAdapter.parse(INSPECT_LOG, ctx)[0];
+const unseeded = inspectAdapter.parse({ ...INSPECT_LOG, eval: { ...INSPECT_LOG.eval, config: {} } }, ctx)[0];
+check('repeatability is recorded only when the run pinned a seed',
+  seeded.ok && seeded.submission.quality.repeatability !== undefined
+  && unseeded.ok && unseeded.submission.quality.repeatability === undefined,
+  'Repeatability must be absent for an unpinned run rather than estimated. A number here would assert reproducibility the log cannot support.');
+
+check('construct validity is never assessed by the adapter',
+  seeded.ok && seeded.submission.quality.constructValidity === undefined,
+  'The adapter scored construct validity. Whether a task measures what a claim asserts is a judgement about the evaluation design, and a pass rate cannot contain it.');
+
+check('every adapter submission carries its provenance rationale',
+  seeded.ok && Boolean(seeded.submission.provenanceRefs?.provenanceRationale),
+  'A provenance score arrived with no stated reason, which makes it an unexplained aggregate of exactly the kind this project argues against.');
 
 section('Permit invariant');
 const noAuthority = verifyNoAuthorityOutsideOperatingStates();
