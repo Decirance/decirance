@@ -171,12 +171,28 @@ export const EXAMPLE_PASSPORT_V5_CONTAINMENT: PassportSnapshot = {
  * next to evidence collected against something else. A canonical SHA-256 over
  * the actual document cannot be written by hand.
  */
+/**
+ * The moment the reference Passports were written.
+ *
+ * Fixed, and it matters. `created_at` is inside the digest, and this helper
+ * previously let it default to the clock — so every process computed different
+ * hashes for identical configurations, and `EXAMPLE_PASSPORT_HASHES` was
+ * reproducible only within a single run. Internally consistent code never
+ * noticed; the published artefacts did. The reference evidence manifest scoped
+ * its 21 results to a hash that matched no published Passport, which is exactly
+ * the silent failure this product exists to catch, in our own example.
+ *
+ * Must stay equal to the value the example builder writes into the documents.
+ */
+export const EXAMPLE_PASSPORT_CREATED_AT = '2026-09-03T00:00:00.000Z';
+
 const digestFor = (snapshot: PassportSnapshot, version: string): string =>
   passportDigest(serialisePassport(snapshot, {
     agentId: 'agt_meridian_reply',
     agentVersion: version,
     owner: EXAMPLE_AGENT.owner,
     purpose: 'Triage inbound casework and draft responses for human review.',
+    createdAt: EXAMPLE_PASSPORT_CREATED_AT,
   }));
 
 export const EXAMPLE_PASSPORT_HASHES = {
@@ -184,6 +200,28 @@ export const EXAMPLE_PASSPORT_HASHES = {
   v4: digestFor(EXAMPLE_PASSPORT_V4_CYBER, '4.0.0'),
   v5: digestFor(EXAMPLE_PASSPORT_V5_CONTAINMENT, '5.0.0'),
 } as const;
+
+/**
+ * Mitigations an approver has accepted for a challenged claim, by claim ref.
+ *
+ * A challenged critical claim stops a deployment unless someone with the
+ * authority to do so accepts a mitigation for it — so the acceptance is part of
+ * the case, not a detail of whoever is rendering it. It lived in the website
+ * fixture and in the example builder as two copies of `claimRef === 'C-04'`,
+ * which meant the published assurance graph recorded no acceptance at all: a
+ * reader of the files saw a contradicted critical claim and an active permit,
+ * with nothing in between.
+ *
+ * `by` and `rationale` are both required by the consumers that read this. An
+ * acceptance naming nobody is not an acceptance.
+ */
+export const EXAMPLE_ACCEPTED_MITIGATIONS: Record<string, { by: string; rationale: string }> = {
+  'C-04': {
+    by: EXAMPLE_AGENT.owner,
+    rationale:
+      'Adaptive injection reached a draft tool call in 3 of 200 runs. Accepted against the outbound reviewer gate and the weekly injection challenge pack, recorded as RR-01.',
+  },
+};
 
 export const EXAMPLE_CLAIMS: ClaimNode[] = [
   // ── Containment and evaluation integrity ────────────────────────────────

@@ -47,6 +47,8 @@ import {
   assessIntegrity,
   applyIntegrityGate,
   EXAMPLE_PASSPORT_V5_CONTAINMENT,
+  parsePassport,
+  serialisePassport,
   deriveClaimState,
   type EvidenceIntegrity,
   assessEnforcement,
@@ -1104,6 +1106,62 @@ check('the invariant still decides over the enlarged state space',
     return r.holds && ALL_PERMIT_STATES.length === 12;
   })(),
   'Adding states must extend the exhaustive check, not quietly narrow its coverage. There is one state list, so it cannot fall behind.');
+
+section('Passport file format');
+/**
+ * A Passport written to a file and read back is the same Passport.
+ *
+ * This property had no check, and the serialiser was missing fourteen of the
+ * snapshot's fields — permissions, egress policy, permitted destinations,
+ * sandbox image, package registries, instance cap, safety classifiers, the log,
+ * monitoring and evaluation planes, scorer config, shutdown mechanism and
+ * credential scopes. Everything that worked in memory kept working; everything
+ * that went through a file lost its containment surface.
+ *
+ * The consequence was the worst available: `decirance diff` on two real
+ * Passport files reported "no material change" when a write permission had been
+ * granted, because neither file recorded any permissions at all. A product whose
+ * claim is that it notices exactly this change answered no.
+ *
+ * So the check is over every field of the snapshot, by enumerating the keys of
+ * the object rather than listing them here — a field added to the model with no
+ * place in the file format now fails this instead of disappearing quietly.
+ */
+for (const [label, snapshot] of [
+  ['v3 baseline', EXAMPLE_PASSPORT_V3],
+  ['v4 write permission granted', EXAMPLE_PASSPORT_V4_CYBER],
+  ['v5 containment added', EXAMPLE_PASSPORT_V5_CONTAINMENT],
+] as const) {
+  const doc = serialisePassport(snapshot, {
+    agentId: 'agt_meridian_reply', agentVersion: '3.0.0', owner: 'Owner',
+    purpose: 'Round trip', createdAt: '2026-09-03T00:00:00.000Z',
+  });
+  const parsed = parsePassport(doc);
+  const lost = !parsed.ok ? ['(did not parse)'] : Object.keys(snapshot).filter((k) => {
+    const before = (snapshot as unknown as Record<string, unknown>)[k];
+    const after = (parsed.snapshot as unknown as Record<string, unknown>)[k];
+    // Permissions are a set in the model and are re-read sorted and deduped,
+    // so compare them as sets rather than as sequences.
+    if (Array.isArray(before) && Array.isArray(after) && k === 'permissions') {
+      return JSON.stringify([...before].sort()) !== JSON.stringify([...after].sort());
+    }
+    return JSON.stringify(before) !== JSON.stringify(after);
+  });
+  check(`every field survives a write and read: ${label}`, lost.length === 0,
+    `Fields lost or altered by the file format: ${lost.join(', ')}.`);
+}
+
+check('a permission granted in a file is still a material change',
+  (() => {
+    const meta = { agentId: 'a', agentVersion: '3.0.0', owner: 'o', createdAt: '2026-09-03T00:00:00.000Z' };
+    const before = parsePassport(serialisePassport(EXAMPLE_PASSPORT_V3, meta));
+    const after = parsePassport(serialisePassport(EXAMPLE_PASSPORT_V4_CYBER, { ...meta, agentVersion: '4.0.0' }));
+    if (!before.ok || !after.ok) return false;
+    const viaFiles = diffPassports(before.snapshot, after.snapshot).changes.map((c) => c.kind);
+    const direct = diffPassports(EXAMPLE_PASSPORT_V3, EXAMPLE_PASSPORT_V4_CYBER).changes.map((c) => c.kind);
+    return direct.length > 0 && JSON.stringify(viaFiles) === JSON.stringify(direct);
+  })(),
+  'The CLI compares files, so a change the file format cannot carry is a change the product cannot detect. In-memory agreement is not enough.');
 
 console.log(`\n${failures === 0 ? 'All checks passed.' : `${failures} CHECK(S) FAILED.`}\n`);
 process.exitCode = failures === 0 ? 0 : 1;

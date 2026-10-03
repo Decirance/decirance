@@ -71,7 +71,13 @@
     "recovery_objectives": {
       "rto": "30m",
       "rpo": "5m"
-    }
+    },
+    "permissions": [
+      "case:read",
+      "document:read",
+      "draft:create",
+      "review:request"
+    ]
   },
   "entitlement": {
     "provider_plan": "enterprise",
@@ -83,5 +89,35 @@
     "data_residency": "uk",
     "expiry": "2027-03-31"
   },
-  "digest": "sha256:5b772b93c8cf0198d1e518ee038cf57a06cbdf2e45ab44b489ac78d7421ea434"
+  "containment": {
+    "network_egress": "deny-all",
+    "permitted_destinations": [
+      "case-store.internal",
+      "model-api.anthropic.com"
+    ],
+    "sandbox_image": "meridian-agent-sandbox:3.1.0",
+    "package_registries": [
+      "internal-mirror.meridian.gov.uk"
+    ],
+    "shared_storage": [],
+    "inter_agent_channels": [],
+    "max_concurrent_instances": "4",
+    "safety_classifiers": [
+      "cyber-refusal",
+      "pii-redaction",
+      "injection-filter"
+    ],
+    "shutdown_mechanism": "identity-revocation+gateway-kill",
+    "credential_scopes": [
+      "case:read@15m"
+    ]
+  },
+  "observability": {
+    "logging_destination": "siem:meridian-immutable",
+    "log_plane": "independent",
+    "monitoring_plane": "independent",
+    "evaluation_harness": "inspect@0.3.44",
+    "scorer_config": "sha256:9d02…af"
+  },
+  "digest": "sha256:b34b4f8ec5ed659bf615dfb4b0573b65f8509cd39f9bd73122cf17c49699d46f"
 }

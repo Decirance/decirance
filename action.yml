@@ -1,0 +1,127 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# Assess a Deployment Case in CI, and fail the build when a change has
+# invalidated the evidence a permit rested on.
+#
+# The point is not to approve anything — nothing here can issue a permit, by
+# design. It is that the moment somebody grants the agent a new permission,
+# swaps its model or points it at another MCP server, the pull request that does
+# it says which claims just stopped being supported, rather than that discovery
+# happening at the next audit.
+#
+# Usage:
+#
+#   - uses: Decirance/decirance@main
+#     with:
+#       case: ./decirance-case
+#       require: approve_with_conditions
+#
+# `case` must contain agent-passport.json, assurance-graph.json and
+# evidence-manifest.json, and should contain history/ so evidence collected
+# against an earlier Passport can be carried forward rather than failing closed.
+
+name: Decirance assess
+description: Assess an AI agent Deployment Case, and fail when evidence no longer supports the deployment.
+author: Decirance
+
+branding:
+  icon: shield
+  color: green
+
+inputs:
+  case:
+    description: Path to the Deployment Case directory.
+    required: false
+    default: ./decirance-case
+  require:
+    description: >
+      Minimum acceptable recommendation: approve, approve_with_conditions or
+      supervised_pilot. The step fails when the case falls below it. Leave unset
+      to report without failing.
+    required: false
+    default: ''
+  since:
+    description: >
+      An earlier Agent Passport to resolve evidence against, when it is not in
+      the case's history/ directory.
+    required: false
+    default: ''
+  summary:
+    description: Write the assessment to the job summary.
+    required: false
+    default: 'true'
+
+outputs:
+  recommendation:
+    description: approve, approve_with_conditions, supervised_pilot or reject.
+    value: ${{ steps.assess.outputs.recommendation }}
+  binding-rule:
+    description: The single rule that set the recommendation.
+    value: ${{ steps.assess.outputs.binding_rule }}
+  severed:
+    description: How many pieces of evidence the change severed.
+    value: ${{ steps.assess.outputs.severed }}
+  carried-forward:
+    description: How many survived it.
+    value: ${{ steps.assess.outputs.carried_forward }}
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-node@v4
+      with:
+        node-version: '22'
+
+    # Installed inside the action's own checkout, so the consumer's project is
+    # untouched: a tool that assures a deployment must not alter it.
+    - name: Install Decirance
+      shell: bash
+      run: npm install --prefix "$GITHUB_ACTION_PATH" --no-audit --no-fund
+
+    - name: Assess the Deployment Case
+      id: assess
+      shell: bash
+      run: |
+        set -o pipefail
+        args=("${{ inputs.case }}")
+        if [ -n "${{ inputs.since }}" ]; then args+=(--since "${{ inputs.since }}"); fi
+
+        # Human-readable to the log, JSON for the outputs. Two runs over the
+        # same files rather than one parsed twice: the printed form is what a
+        # reviewer reads in the log, and it should not be reconstructed.
+        node --import tsx "$GITHUB_ACTION_PATH/cli/decirance.ts" assess "${args[@]}" | tee assessment.txt
+        node --import tsx "$GITHUB_ACTION_PATH/cli/decirance.ts" assess "${args[@]}" --json > assessment.json
+
+        recommendation=$(node -e "console.log(require('./assessment.json').result.recommendation)")
+        binding=$(node -e "const r=require('./assessment.json').result.bindingRule; console.log(r ? r.rule : 'none')")
+        severed=$(node -e "console.log(require('./assessment.json').counts.severed)")
+        carried=$(node -e "console.log(require('./assessment.json').counts.carriedForward)")
+
+        echo "recommendation=$recommendation" >> "$GITHUB_OUTPUT"
+        echo "binding_rule=$binding" >> "$GITHUB_OUTPUT"
+        echo "severed=$severed" >> "$GITHUB_OUTPUT"
+        echo "carried_forward=$carried" >> "$GITHUB_OUTPUT"
+
+        if [ "${{ inputs.summary }}" = "true" ]; then
+          {
+            echo "### Decirance assessment"
+            echo
+            echo "**$recommendation** — $binding"
+            echo
+            echo "$severed piece(s) of evidence severed by change, $carried carried forward."
+            echo
+            echo '```'
+            cat assessment.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+        fi
+
+    # A separate step, so the log shows the assessment before the failure rather
+    # than a red step somebody has to expand to understand.
+    - name: Enforce the required level
+      if: inputs.require != ''
+      shell: bash
+      run: |
+        node --import tsx "$GITHUB_ACTION_PATH/cli/decirance.ts" assess "${{ inputs.case }}" \
+          ${{ inputs.since != '' && format('--since {0}', inputs.since) || '' }} \
+          --require "${{ inputs.require }}" > /dev/null

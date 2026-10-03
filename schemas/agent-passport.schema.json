@@ -4,7 +4,14 @@
   "title": "Agent Passport",
   "description": "An immutable snapshot of the exact system being assessed. A Passport is never edited in place: assurance rests on being able to say 'this evidence was collected against v3, and you are now running v4', so mutating one destroys the only anchor the assurance case has. Fields hold digests and identifiers rather than content — a prompt digest rather than the prompt, tool and permission names rather than credentials.",
   "type": "object",
-  "required": ["schema_version", "agent_id", "agent_version", "owner", "environment", "components"],
+  "required": [
+    "schema_version",
+    "agent_id",
+    "agent_version",
+    "owner",
+    "environment",
+    "components"
+  ],
   "additionalProperties": false,
   "properties": {
     "schema_version": {
@@ -36,20 +43,36 @@
       "minLength": 1,
       "description": "Deployment environment. Evidence collected in one environment does not automatically apply in another."
     },
-    "created_at": { "type": "string", "format": "date-time" },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
     "components": {
       "type": "object",
-      "required": ["model", "prompt_digest"],
+      "required": [
+        "model",
+        "prompt_digest"
+      ],
       "additionalProperties": false,
       "description": "What the agent is made of. Each entry is a surface a change can alter.",
       "properties": {
         "model": {
           "type": "object",
-          "required": ["provider", "model", "version"],
+          "required": [
+            "provider",
+            "model",
+            "version"
+          ],
           "additionalProperties": false,
           "properties": {
-            "provider": { "type": "string", "minLength": 1 },
-            "model": { "type": "string", "minLength": 1 },
+            "provider": {
+              "type": "string",
+              "minLength": 1
+            },
+            "model": {
+              "type": "string",
+              "minLength": 1
+            },
             "version": {
               "type": "string",
               "minLength": 1,
@@ -62,39 +85,69 @@
           "minLength": 1,
           "description": "Digest of the system prompt. The prompt itself is deliberately not carried: a prompt change alters behaviour without altering configuration, so a digest is required, but the text is customer content."
         },
-        "memory": { "type": "object", "description": "Memory scope and retention." },
+        "memory": {
+          "type": "object",
+          "description": "Memory scope and retention."
+        },
         "tools": {
           "type": "array",
           "items": {
             "type": "object",
-            "required": ["id"],
+            "required": [
+              "id"
+            ],
             "properties": {
-              "id": { "type": "string" },
-              "version": { "type": "string" },
-              "permissions": { "type": "array", "items": { "type": "string" } }
+              "id": {
+                "type": "string"
+              },
+              "version": {
+                "type": "string"
+              },
+              "permissions": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
             }
           }
         },
         "data_sources": {
           "type": "array",
-          "items": { "type": "string" },
+          "items": {
+            "type": "string"
+          },
           "description": "Systems the agent can read. An absent list means unknown, not none."
         },
-        "guardrails": { "type": "array", "items": { "type": "string" } },
-        "identity": { "type": "object", "description": "Principal and scope the agent runs as." },
+        "guardrails": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "identity": {
+          "type": "object",
+          "description": "Principal and scope the agent runs as."
+        },
         "dependencies": {
           "type": "array",
-          "items": { "type": "string" },
+          "items": {
+            "type": "string"
+          },
           "description": "Third-party services the agent's operation depends on."
         },
         "mcp_servers": {
           "type": "array",
-          "items": { "type": "string" },
+          "items": {
+            "type": "string"
+          },
           "description": "MCP servers, ideally pinned. Tool descriptions on these servers are instruction surface and are fingerprinted separately."
         },
         "index_content_sources": {
           "type": "array",
-          "items": { "type": "string" },
+          "items": {
+            "type": "string"
+          },
           "description": "Sources feeding a retrieval index. Distinct from data_sources: this is content the agent may treat as authoritative."
         },
         "memory_write_policy": {
@@ -111,12 +164,23 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "autonomy_level": { "type": "string" },
+        "autonomy_level": {
+          "type": "string"
+        },
         "human_review": {
           "type": "object",
           "description": "Where human confirmation is required. An empty object where the Context Contract requires oversight is a breach, not a gap."
         },
-        "recovery_objectives": { "type": "object" }
+        "recovery_objectives": {
+          "type": "object"
+        },
+        "permissions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Every permission the agent holds, flat. Also derivable from components.tools[].permissions, and both are read: a permission is often granted at the account or connector level rather than against a named tool, and a permit records permitted actions as one set."
+        }
       }
     },
     "entitlement": {
@@ -124,17 +188,121 @@
       "additionalProperties": false,
       "description": "Commercial entitlement the agent operates under. Recorded because a contractual change — a provider that starts retaining prompts, a lapsed agreement, a move from an enterprise account to a personal key — can invalidate assurance evidence with no technical change to the agent at all. This is not licence management: no seats, renewals or spend.",
       "properties": {
-        "provider_plan": { "type": "string" },
-        "account_binding": { "type": "string" },
-        "data_processing_terms": { "type": "object" },
-        "data_residency": { "type": "string" },
-        "expiry": { "type": "string" },
-        "contract_ref": { "type": "string" }
+        "provider_plan": {
+          "type": "string"
+        },
+        "account_binding": {
+          "type": "string"
+        },
+        "data_processing_terms": {
+          "type": "object"
+        },
+        "data_residency": {
+          "type": "string"
+        },
+        "expiry": {
+          "type": "string"
+        },
+        "contract_ref": {
+          "type": "string"
+        }
       }
     },
     "digest": {
       "type": "string",
       "description": "Digest over the normalised document with this field excluded. Keys are sorted before hashing so two semantically identical manifests written by different tools agree — otherwise 'has this changed?' is answered by JSON key ordering. Tamper-evident, not cryptographic."
+    },
+    "containment": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "What stops the agent reaching beyond its boundary. Describes the enclosure rather than the agent, and is what the containment claims are assessed against. An absent field is read as unknown, never as safe.",
+      "properties": {
+        "network_egress": {
+          "type": "string",
+          "description": "Egress policy, e.g. deny-all, allowlist, unrestricted."
+        },
+        "permitted_destinations": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Destinations the agent may reach when egress is allowlisted."
+        },
+        "sandbox_image": {
+          "type": "string",
+          "description": "The execution image, including its tag: a rebuilt image is a different enclosure."
+        },
+        "package_registries": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Registries the runtime may install from. A new registry is a new supply chain."
+        },
+        "shared_storage": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Storage shared with other agents or workloads."
+        },
+        "inter_agent_channels": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Channels through which other agents can influence this one."
+        },
+        "max_concurrent_instances": {
+          "type": "string",
+          "description": "Cap on simultaneous instances. Concurrency changes what one agent can coordinate."
+        },
+        "safety_classifiers": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Classifiers in the request or response path."
+        },
+        "shutdown_mechanism": {
+          "type": "string",
+          "description": "How the organisation stops the agent and revokes its access."
+        },
+        "credential_scopes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Scopes of the credentials reachable by the agent, not the credentials themselves."
+        }
+      }
+    },
+    "observability": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Where the evidence about this agent comes from, and who could alter it. An agent that can write to the plane that assures it can make its own case.",
+      "properties": {
+        "logging_destination": {
+          "type": "string",
+          "description": "Where tool calls and decisions are recorded."
+        },
+        "log_plane": {
+          "type": "string",
+          "description": "The plane holding those records, and whether the agent can reach it."
+        },
+        "monitoring_plane": {
+          "type": "string",
+          "description": "The plane raising alerts about the agent."
+        },
+        "evaluation_harness": {
+          "type": "string",
+          "description": "The harness that produces evaluation evidence, including its version."
+        },
+        "scorer_config": {
+          "type": "string",
+          "description": "The scorer configuration those results were produced under."
+        }
+      }
     }
   }
 }

@@ -16,22 +16,59 @@ The gap is not a lack of evidence. It is that nothing connects the evidence to a
 
 ---
 
-## Try it in two minutes
+## Try it in fifteen minutes
 
 ```bash
 git clone https://github.com/Decirance/decirance.git
 cd decirance && npm install
 
-# Scan a project for agent frameworks, model providers and MCP servers
-npm run scan -- /path/to/your/agent-project
+# 1. A complete Deployment Case on disk — four documents, fictional agent
+npm run init -- mycase
 
-# Run the reference assessment and its four change scenarios
-npm test
+# 2. What does the evidence support, and what follows?
+npm run assess -- mycase
+
+# 3. Take the decision. Needs a named accountable owner; refuses without one.
+npm run permit -- mycase --approver "Your Name" --role accountable-owner \
+  --condition "Human approval before any external send"
+
+# 4. The agent is granted a write permission its contract prohibits
+npx decirance apply mycase/changes/tool-write-permission.json mycase
+npm run assess -- mycase
 ```
 
-No account, no server, no telemetry. The scanner reads only files a repository
-normally contains, and it never reads a `.env` — environment variable *names*
-are informative, values are not.
+Step 4 is the point. **18 of the 21 results carry forward; three are severed**,
+named, with the change that severed them — and the claims that rested on them
+stop being supported. Adding a control back does not restore the permit:
+
+```bash
+npx decirance apply mycase/changes/containment-added.json mycase
+npm run assess -- mycase          # the recommendation does not improve
+npm test                          # engine properties, schemas, and the above
+```
+
+No account, no server, no telemetry. To point it at your own agent,
+`npm run scan -- /path/to/your/agent-project` drafts a Passport; it reads only
+files a repository normally contains, and never reads a `.env` — environment
+variable *names* are informative, values are not.
+
+Full walkthrough: [docs/quickstart.md](docs/quickstart.md).
+
+### In your pipeline
+
+```yaml
+- uses: Decirance/decirance@main
+  with:
+    case: ./decirance-case
+    require: approve_with_conditions
+```
+
+The pull request that grants the agent a permission, swaps its model or adds an
+MCP server is the place to find out which claims just stopped being supported —
+not the next audit. The action reports the recommendation, the rule that set it,
+and how much evidence survived the change; it fails the build when the case
+falls below the level you name. It cannot issue a permit: only a named
+accountable owner can, and that is deliberate.
 
 ---
 
@@ -41,7 +78,7 @@ are informative, values are not.
 |---|---|
 | `schemas/` | Agent Passport, Context Contract, Evidence Manifest, Deployment Permit — JSON Schema |
 | `src/` | The reference assurance engine. Dependency-free TypeScript, runs in Node or a browser |
-| `cli/` | `decirance scan`, and the verification harness |
+| `cli/` | `decirance init / assess / permit / apply / diff / scan`, and three test harnesses |
 | `examples/meridian-reply-agent/` | A complete, reproducible reference assessment |
 | `threat-library/` | Hazards and executable scenarios, mapped to NCSC guidance themes |
 | `framework-mappings/` | [NCSC mapping](framework-mappings/ncsc.md); others planned |

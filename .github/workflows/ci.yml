@@ -59,3 +59,28 @@ jobs:
             echo "::error::examples/ and threat-library/ are stale. Run 'npm run build:examples' and commit the result."
             exit 1
           fi
+
+  # The action is a product surface, so it is run rather than merely published.
+  # It assesses a case produced by `decirance init`, which also proves that what
+  # the quick start creates is something the action can read.
+  action:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install
+      - name: Create a case for it to assess
+        run: npx tsx ./cli/decirance.ts init ./ci-case
+      - name: The action assesses it
+        id: decirance
+        uses: ./
+        with:
+          case: ./ci-case
+          require: approve_with_conditions
+      - name: And reports what it found
+        run: |
+          echo "recommendation: ${{ steps.decirance.outputs.recommendation }}"
+          echo "bound by:       ${{ steps.decirance.outputs.binding-rule }}"
+          test "${{ steps.decirance.outputs.recommendation }}" = 'approve_with_conditions'

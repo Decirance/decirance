@@ -32,6 +32,8 @@ import {
   EXAMPLE_HAZARDS,
   EXAMPLE_MCP_SERVERS,
   EXAMPLE_OBLIGATIONS,
+  EXAMPLE_ACCEPTED_MITIGATIONS,
+  EXAMPLE_PASSPORT_CREATED_AT,
   EXAMPLE_PASSPORT_HASHES,
   EXAMPLE_PASSPORT_V3,
   EXAMPLE_PASSPORT_V4_CYBER,
@@ -62,7 +64,7 @@ const write = (path: string, value: unknown) => {
  * whose premise is that a configuration has a stable content address, that was
  * the wrong default in the one place it is most visible.
  */
-const EXAMPLE_CREATED_AT = '2026-09-03T00:00:00.000Z';
+const EXAMPLE_CREATED_AT = EXAMPLE_PASSPORT_CREATED_AT;
 
 const passportDoc = serialisePassport(EXAMPLE_PASSPORT_V3, {
   agentId: 'agt_meridian_reply',
@@ -107,7 +109,7 @@ function runScenario(name: string, to: PassportSnapshot, label: string) {
       // inconsistent: rule R2 would cap every scenario at reject while the
       // permit sits active, and a reference assessment that contradicts itself
       // teaches the wrong thing.
-      mitigationAccepted: o.claimRef === 'C-04',
+      mitigationAccepted: Boolean(EXAMPLE_ACCEPTED_MITIGATIONS[o.claimRef]),
       state: deriveClaimState({
         supportingEvidence: o.preservedEvidenceRefs.length,
         challengingEvidence: o.challengingEvidenceRefs.length,
@@ -182,7 +184,22 @@ function main(): void {
   write(join(exampleDir, 'assurance-graph.json'), {
     schema_version: '0.1.0',
     case_id: 'case_meridian_v1',
-    claims: EXAMPLE_CLAIMS.map((c) => ({ ...c, evidence: evidenceRefsFor(c.ref) })),
+    claims: EXAMPLE_CLAIMS.map((c) => ({
+      ...c,
+      evidence: evidenceRefsFor(c.ref),
+      // Written into the document rather than held in code: a challenged
+      // critical claim with an accepted mitigation and one without are
+      // different cases, and only one of them may operate.
+      ...(EXAMPLE_ACCEPTED_MITIGATIONS[c.ref]
+        ? {
+          mitigation: {
+            accepted: true,
+            accepted_by: EXAMPLE_ACCEPTED_MITIGATIONS[c.ref].by,
+            rationale: EXAMPLE_ACCEPTED_MITIGATIONS[c.ref].rationale,
+          },
+        }
+        : {}),
+    })),
     edges: EXAMPLE_EDGES,
     mcp_servers: EXAMPLE_MCP_SERVERS,
   });

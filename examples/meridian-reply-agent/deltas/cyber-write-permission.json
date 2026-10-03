@@ -386,6 +386,7 @@
   "summary": {
     "preserved": 14,
     "affected": 1,
+    "unknown": 0,
     "invalidated": 3,
     "unproven": 2,
     "challenged": 1,

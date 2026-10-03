@@ -18,7 +18,7 @@
  */
 
 import { readFileSync, existsSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import {
   parsePassport,
   passportDigest,
@@ -71,14 +71,50 @@ function loadGraph(path?: string): { graph: GraphInput; source: string } {
     };
   }
   const raw = readJson(path) as Partial<GraphInput>;
-  for (const key of ['claims', 'evidence', 'edges'] as const) {
+  for (const key of ['claims', 'edges'] as const) {
     if (!Array.isArray(raw[key])) {
       throw new Error(`${path}: expected an array property "${key}".`);
     }
   }
+
+  /**
+   * Evidence may live beside the graph rather than inside it.
+   *
+   * A Deployment Case is four documents, and the published assurance graph
+   * holds claims and edges while the evidence is in `evidence-manifest.json`
+   * next to it. This command used to require one file carrying all three, so
+   * `--graph` could not read the case this project itself ships — the quick
+   * start failed on its own example. The manifest is picked up automatically,
+   * and a graph with its own inline `evidence` still works.
+   */
+  let evidence = raw.evidence;
+  let manifestNote = '';
+  if (!Array.isArray(evidence)) {
+    const manifestPath = join(dirname(resolve(path)), 'evidence-manifest.json');
+    if (!existsSync(manifestPath)) {
+      throw new Error(
+        `${path}: no "evidence" array, and no evidence-manifest.json beside it.\n`
+        + 'A delta needs to know which evidence supports which claim.',
+      );
+    }
+    const manifest = readJson(manifestPath) as { evidence?: Array<Record<string, unknown>> };
+    if (!Array.isArray(manifest.evidence)) {
+      throw new Error(`${manifestPath}: expected an array property "evidence".`);
+    }
+    evidence = manifest.evidence.map((e) => ({
+      ref: String(e.ref),
+      title: String(e.title ?? e.ref),
+      sourceKind: String(e.source_kind ?? 'unknown'),
+      scopePassportHash: String(e.scope_passport_digest ?? ''),
+      collectedAt: String(e.collected_at ?? ''),
+      owner: String(e.collected_by ?? ''),
+    })) as unknown as EvidenceNode[];
+    manifestNote = ' + evidence-manifest.json';
+  }
+
   return {
-    graph: { claims: raw.claims!, evidence: raw.evidence!, edges: raw.edges! },
-    source: resolve(path),
+    graph: { claims: raw.claims!, evidence, edges: raw.edges! },
+    source: `${resolve(path)}${manifestNote}`,
   };
 }
 
@@ -139,9 +175,29 @@ export function runDiff(args: string[]): number {
   // only state a post-change recommendation may rest on. Evidence invalidated
   // by the change no longer counts as support, and contradicting evidence is
   // counted separately rather than netted off against it.
+  /**
+   * Accepted mitigations come from the graph, as they do in `assess`.
+   *
+   * Without this, the two commands answered differently about the same change:
+   * `assess` saw that an approver had accepted a mitigation for a challenged
+   * critical claim and `diff` did not, so one said supervised pilot and the
+   * other reject. Two tools over one case must not disagree about what the
+   * case says; an acceptance is part of the case, and only counts when it names
+   * who accepted it and why.
+   */
+  const mitigated = new Set(
+    graph.claims
+      .filter((c) => {
+        const m = (c as { mitigation?: { accepted?: boolean; accepted_by?: string; rationale?: string } }).mitigation;
+        return m?.accepted === true && Boolean(m.accepted_by?.trim()) && Boolean(m.rationale?.trim());
+      })
+      .map((c) => c.ref),
+  );
+
   const claimStates = delta.outcomes.map((o) => ({
     ref: o.claimRef,
     critical: o.critical,
+    mitigationAccepted: mitigated.has(o.claimRef),
     state: deriveClaimState({
       supportingEvidence: o.preservedEvidenceRefs.length,
       challengingEvidence: o.challengingEvidenceRefs.length,

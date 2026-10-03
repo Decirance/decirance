@@ -425,6 +425,7 @@
   "summary": {
     "preserved": 14,
     "affected": 0,
+    "unknown": 0,
     "invalidated": 4,
     "unproven": 4,
     "challenged": 1,

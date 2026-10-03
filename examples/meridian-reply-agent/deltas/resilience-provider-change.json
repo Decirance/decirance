@@ -370,6 +370,7 @@
   "summary": {
     "preserved": 17,
     "affected": 0,
+    "unknown": 0,
     "invalidated": 1,
     "unproven": 3,
     "challenged": 1,

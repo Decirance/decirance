@@ -45,6 +45,44 @@ export interface PassportDocument {
     autonomy_level?: string;
     human_review?: Record<string, unknown>;
     recovery_objectives?: Record<string, unknown>;
+    /**
+     * Every permission the agent holds, flat.
+     *
+     * Also derivable from `components.tools[].permissions`, and both are read.
+     * The flat list exists because a permission is often granted at the account
+     * or connector level rather than against a named tool, and because a permit
+     * records permitted actions as one set — a reader should not have to
+     * reassemble it from the tool inventory.
+     */
+    permissions?: string[];
+  };
+  /**
+   * What stops the agent reaching beyond its boundary.
+   *
+   * A separate section rather than more `components` fields: these describe the
+   * enclosure, not the agent, and they are what the containment claims
+   * (C-15 to C-19) are assessed against. An absent field is read as unknown,
+   * never as safe.
+   */
+  containment?: {
+    network_egress?: string;
+    permitted_destinations?: string[];
+    sandbox_image?: string;
+    package_registries?: string[];
+    shared_storage?: string[];
+    inter_agent_channels?: string[];
+    max_concurrent_instances?: string;
+    safety_classifiers?: string[];
+    shutdown_mechanism?: string;
+    credential_scopes?: string[];
+  };
+  /** Where the evidence about this agent comes from, and who could alter it. */
+  observability?: {
+    logging_destination?: string;
+    log_plane?: string;
+    monitoring_plane?: string;
+    evaluation_harness?: string;
+    scorer_config?: string;
   };
   /** Commercial entitlement the agent operates under. */
   entitlement?: {
@@ -78,7 +116,7 @@ export type PassportParseResult =
 const KNOWN_TOP_LEVEL = new Set([
   'schema_version', 'agent_id', 'agent_version', 'owner', 'purpose',
   'environment', 'created_at', 'components', 'operating', 'entitlement',
-  'digest',
+  'containment', 'observability', 'digest',
 ]);
 const KNOWN_COMPONENTS = new Set([
   'model', 'prompt_digest', 'memory', 'tools', 'data_sources', 'guardrails',
@@ -206,7 +244,9 @@ export function parsePassport(input: unknown): PassportParseResult {
     systemPromptDigest: promptDigest,
     memoryConfig: obj(components.memory),
     tools: toolIds,
-    permissions: [...new Set(permissions)].sort(),
+    // Granted against a tool, or at the account level, or both. Both are read,
+    // because a permission recorded in only one place is still held.
+    permissions: [...new Set([...permissions, ...strArray(operating.permissions)])].sort(),
     dataSources: strArray(components.data_sources),
     guardrails: strArray(components.guardrails),
     identityBinding: obj(components.identity),
@@ -301,6 +341,7 @@ export function serialisePassport(
       autonomy_level: snapshot.autonomyLevel,
       human_review: snapshot.humanReviewWorkflow,
       recovery_objectives: snapshot.recoveryObjectives,
+      permissions: snapshot.permissions,
     },
     entitlement: {
       provider_plan: snapshot.providerPlan,
@@ -308,6 +349,36 @@ export function serialisePassport(
       data_processing_terms: snapshot.dataProcessingTerms,
       data_residency: snapshot.dataResidency,
       expiry: snapshot.entitlementExpiry,
+    },
+    /**
+     * The containment and observability surfaces.
+     *
+     * These were absent from the serialiser while the parser already read them,
+     * so fourteen fields — permissions, egress policy, sandbox image,
+     * credential scopes, shutdown mechanism, log and evaluation planes — were
+     * silently dropped on the way out. A Passport written by this function and
+     * read back reported no permissions at all, which meant `decirance diff`
+     * answered "no material change" to a write permission being granted: the
+     * exact change the product exists to catch, missed by the file format.
+     */
+    containment: {
+      network_egress: snapshot.networkEgress,
+      permitted_destinations: snapshot.permittedDestinations,
+      sandbox_image: snapshot.sandboxImage,
+      package_registries: snapshot.packageRegistries,
+      shared_storage: snapshot.sharedStorage,
+      inter_agent_channels: snapshot.interAgentChannels,
+      max_concurrent_instances: snapshot.maxConcurrentInstances,
+      safety_classifiers: snapshot.safetyClassifiers,
+      shutdown_mechanism: snapshot.shutdownMechanism,
+      credential_scopes: snapshot.credentialScopes,
+    },
+    observability: {
+      logging_destination: snapshot.loggingDestination,
+      log_plane: snapshot.logPlane,
+      monitoring_plane: snapshot.monitoringPlane,
+      evaluation_harness: snapshot.evaluationHarness,
+      scorer_config: snapshot.scorerConfig,
     },
   };
 }

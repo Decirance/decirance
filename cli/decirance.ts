@@ -46,6 +46,27 @@ function usage(): void {
   console.log(`
 decirance — open assurance for AI agents
 
+  init [dir] [--force]
+      Write a complete, working Deployment Case to disk, with the changed
+      Passports the change scenarios use. The case is fictional and says so.
+
+  apply <new-passport.json> [dir]
+      Move the case onto a new Agent Passport, keeping the old one in history/
+      so a later assessment can tell what the change severed.
+
+  assess [dir] [--json] [--since <passport.json>] [--require <level>]
+      Assess a case: which evidence is in scope for the Passport in front of
+      you, what each claim is therefore supported by, and what the rules
+      recommend. Produces a recommendation, never a decision. With --require,
+      exits non-zero when the recommendation is below the level named
+      (approve, approve_with_conditions, supervised_pilot) — for use in CI.
+
+  permit [dir] --approver <name> --role accountable-owner
+         [--condition <text>]... [--accept-risk <ref>]... [--expires <iso>]
+      Take the decision. Refuses without a named accountable owner, refuses
+      outright when the rules say reject — writing a refusal record instead —
+      and records what will suspend the permit automatically.
+
   scan [dir] [--out <dir>]
       Inventory an agent project and draft an Agent Passport.
       Reads only files a repository normally contains; never reads a .env.
@@ -169,9 +190,27 @@ function scan(args: string[]): void {
 async function runScript(name: string, args: string[] = []): Promise<number> {
   const { spawnSync } = await import('node:child_process');
   const here = dirname(fileURLToPath(import.meta.url));
+
+  /**
+   * Resolve the TypeScript loader from *this* module, not from the working
+   * directory.
+   *
+   * `--import tsx` makes the child resolve the bare name against its own cwd,
+   * which works only while the command is run from inside this repository.
+   * Anyone following the quick start runs it from their own project — where the
+   * child failed with ERR_MODULE_NOT_FOUND and no usable explanation.
+   */
+  let loader = 'tsx';
+  try {
+    loader = import.meta.resolve('tsx');
+  } catch {
+    // Keep the bare name: an older Node without import.meta.resolve is still
+    // fine when tsx is resolvable from the cwd, which is the in-repo case.
+  }
+
   const result = spawnSync(
     process.execPath,
-    ['--import', 'tsx', join(here, name), ...args],
+    ['--import', loader, join(here, name), ...args],
     { stdio: 'inherit' },
   );
   if (result.error) {
@@ -187,6 +226,29 @@ switch (command) {
   case 'scan':
     scan(rest);
     break;
+  case 'init': {
+    const { runInit } = await import('./init.ts');
+    process.exitCode = runInit(rest);
+    break;
+  }
+  case 'apply':
+  case 'assess':
+  case 'permit': {
+    // All three read a case directory and fail the same way when a document is
+    // missing or unparseable, so the message is printed here rather than thrice.
+    const mod = command === 'assess'
+      ? await import('./assess.ts')
+      : command === 'permit' ? await import('./permit.ts') : await import('./apply.ts');
+    try {
+      process.exitCode = 'runAssess' in mod
+        ? mod.runAssess(rest)
+        : 'runPermit' in mod ? mod.runPermit(rest) : mod.runApply(rest);
+    } catch (e) {
+      console.error((e as Error).message);
+      process.exitCode = 1;
+    }
+    break;
+  }
   case 'diff': {
     const { runDiff } = await import('./diff.ts');
     try {

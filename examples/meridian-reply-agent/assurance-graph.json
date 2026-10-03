@@ -144,6 +144,11 @@
         "challenges": [
           "E-112"
         ]
+      },
+      "mitigation": {
+        "accepted": true,
+        "accepted_by": "Ari Rios",
+        "rationale": "Adaptive injection reached a draft tool call in 3 of 200 runs. Accepted against the outbound reviewer gate and the weekly injection challenge pack, recorded as RR-01."
       }
     },
     {
