@@ -67,6 +67,11 @@ decirance — open assurance for AI agents
       outright when the rules say reject — writing a refusal record instead —
       and records what will suspend the permit automatically.
 
+  pack [dir] [--out <file>]
+      Render the case as a Deployment Case pack: what the agent is, what the
+      evidence supports, every rule that fired, what ends the decision, and
+      what the pack does not tell you. Generated from the files, never typed.
+
   scan [dir] [--out <dir>]
       Inventory an agent project and draft an Agent Passport.
       Reads only files a repository normally contains; never reads a .env.
@@ -229,6 +234,16 @@ switch (command) {
   case 'init': {
     const { runInit } = await import('./init.ts');
     process.exitCode = runInit(rest);
+    break;
+  }
+  case 'pack': {
+    const { runPack } = await import('./pack.ts');
+    try {
+      process.exitCode = runPack(rest);
+    } catch (e) {
+      console.error((e as Error).message);
+      process.exitCode = 1;
+    }
     break;
   }
   case 'apply':

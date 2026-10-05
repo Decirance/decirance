@@ -30,6 +30,7 @@ import { assessCase } from './assess.ts';
 import { runPermit } from './permit.ts';
 import { runApply } from './apply.ts';
 import { runDiff } from './diff.ts';
+import { renderPack } from './pack.ts';
 
 let failures = 0;
 function check(name: string, condition: boolean, because: string): void {
@@ -119,6 +120,32 @@ try {
   check('the permit records what will suspend it',
     Array.isArray(permit.suspension_triggers) && permit.suspension_triggers.includes('permission_granted'),
     'A permit that does not say what ends it is a certificate.');
+
+  // ---- 3b. the pack a committee reads ----------------------------------------
+  const pack = renderPack(dir, { generatedAt: '2026-01-01T00:00:00.000Z', label: 'mycase' });
+  check('the pack labels a worked example as fictional',
+    pack.includes('**This case is fictional.**'),
+    'A realistic pack with no label is a document someone will mistake for a real assessment.');
+  for (const heading of ['The decision requested', 'What the agent is', 'Where it may operate',
+    'What the evidence supports', 'Every rule that fired', 'Conditions and accepted risk',
+    'What ends this decision', 'What this pack does not tell you', 'Provenance']) {
+    check(`the pack covers: ${heading}`, pack.includes(heading), `Section "${heading}" is missing.`);
+  }
+  check('the pack states the recommendation and the rule that set it',
+    pack.includes('approve with conditions') && pack.includes('R2b.critical_claim_challenged_mitigated'),
+    'A pack that gives an answer without the rule behind it cannot be argued with.');
+  check('the pack names who accepted the mitigation',
+    pack.includes('accepted by **Ari Rios**'),
+    'The acceptance of a mitigation for a contradicted critical claim is the most consequential line in the pack.');
+  check('the pack quotes the permit it was generated beside',
+    pack.includes('DP-') && pack.includes('signed by Ari Rios'),
+    'A permit exists for this configuration and the pack should say so, with who signed it.');
+  check('the pack ranks what would end the decision, rather than listing everything',
+    pack.includes('| Change | Evidence it severs |') && pack.includes('`permission_granted`'),
+    'Forty alphabetical identifiers is accurate and unreadable.');
+  check('the pack is reproducible',
+    renderPack(dir, { generatedAt: '2026-01-01T00:00:00.000Z', label: 'mycase' }) === pack,
+    'Two renders of one case differed, so the published copy would churn in every diff.');
 
   // ---- 4. something changes ---------------------------------------------------
   const applied = quietly(() => runApply([join(dir, 'changes', 'tool-write-permission.json'), dir]));

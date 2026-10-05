@@ -152,5 +152,72 @@ for (const name of readdirSync(join(root, 'schemas'))) {
   }
 }
 
+/**
+ * Framework mappings cite identifiers that exist.
+ *
+ * A mapping is a document about someone else's document, and the way it rots is
+ * specific: it names a claim that was renamed, or a change kind that was never
+ * in the taxonomy at all. The first draft of the OWASP agentic mapping cited
+ * five change kinds that did not exist — `guardrail_removed`, `tool_description`,
+ * `model_artifact`, `log_plane`, `inter_agent_channels` — each a plausible
+ * near-miss of a real one. Nobody reading the prose would have noticed, and the
+ * table would have been quietly wrong in a file written to be quoted by buyers.
+ */
+console.log('\nFramework mappings');
+{
+  const { MATERIAL_CHANGE_KINDS } = await import('../src/index.ts');
+  const graph = JSON.parse(readFileSync(join(root, 'examples', 'meridian-reply-agent', 'assurance-graph.json'), 'utf8')) as { claims: Array<{ ref: string }> };
+  const hazards = JSON.parse(readFileSync(join(root, 'threat-library', 'hazards.json'), 'utf8')) as { hazards: Array<{ ref: string }> };
+  const claimRefs = new Set(graph.claims.map((c) => c.ref));
+  const hazardRefs = new Set(hazards.hazards.map((h) => h.ref));
+  /**
+   * A backticked lower_snake_case identifier in a mapping is either a change
+   * kind or a field of a published document — those are the only two
+   * vocabularies these files are entitled to cite. Collecting the schema
+   * property names means a mistyped *field* is caught too, not only a mistyped
+   * change kind.
+   */
+  const vocabulary = new Set<string>(MATERIAL_CHANGE_KINDS as readonly string[]);
+  const collectProperties = (node: unknown): void => {
+    if (!node || typeof node !== 'object') return;
+    const n = node as Record<string, unknown>;
+    if (n.properties && typeof n.properties === 'object') {
+      for (const [key, child] of Object.entries(n.properties as Record<string, unknown>)) {
+        vocabulary.add(key);
+        collectProperties(child);
+      }
+    }
+    if (n.items) collectProperties(n.items);
+  };
+  for (const name of readdirSync(join(root, 'schemas'))) {
+    collectProperties(JSON.parse(readFileSync(join(root, 'schemas', name), 'utf8')));
+  }
+
+  const mappingsDir = join(root, 'framework-mappings');
+  for (const name of readdirSync(mappingsDir).filter((f) => f.endsWith('.md') && f !== 'README.md')) {
+    const text = readFileSync(join(mappingsDir, name), 'utf8');
+    const problems: string[] = [];
+
+    // Written in backticks, lower_snake_case: a change kind or a document field.
+    for (const cited of new Set((text.match(/`[a-z][a-z_]{3,}`/g) ?? []).map((t) => t.slice(1, -1)))) {
+      if (!vocabulary.has(cited)) problems.push(`"${cited}" is neither a change kind nor a field in any published schema`);
+    }
+    for (const cited of new Set(text.match(/\bC-\d{2}\b/g) ?? [])) {
+      if (!claimRefs.has(cited)) problems.push(`claim "${cited}" is not in the reference case`);
+    }
+    for (const cited of new Set(text.match(/\bH-\d{2}\b/g) ?? [])) {
+      if (!hazardRefs.has(cited)) problems.push(`hazard "${cited}" is not in the threat library`);
+    }
+
+    if (problems.length === 0) {
+      console.log(`  PASS  ${name}`);
+    } else {
+      failures++;
+      console.log(`  FAIL  ${name}`);
+      for (const p of problems) console.log(`        ${p}`);
+    }
+  }
+}
+
 console.log(`\n${failures === 0 ? 'All schema checks passed.' : `${failures} SCHEMA CHECK(S) FAILED.`}\n`);
 process.exitCode = failures === 0 ? 0 : 1;

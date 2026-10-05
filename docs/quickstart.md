@@ -102,7 +102,22 @@ configuration. The permit state machine has no edge that returns an agent to
 operating without a human — and that is proved exhaustively over all twelve
 states by `npm test`.
 
-## 6. Check everything
+## 6. The pack for the people who decide
+
+```bash
+npx decirance pack mycase --out decision-pack.md
+```
+
+Everything above, as prose and tables: the decision requested, the agent, the
+context, the claims needing attention, every rule that fired, the conditions and
+accepted risk, a ranked table of what will end the decision, and what the pack
+does not tell you. Every figure is computed at render time, so it cannot drift
+from the case — which is also why you regenerate it rather than editing it.
+
+Worked example:
+[examples/meridian-reply-agent/deployment-case.md](../examples/meridian-reply-agent/deployment-case.md).
+
+## 7. Check everything
 
 ```bash
 npm test

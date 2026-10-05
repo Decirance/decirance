@@ -47,6 +47,19 @@ npm run assess -- mycase          # the recommendation does not improve
 npm test                          # engine properties, schemas, and the above
 ```
 
+The document the people who decide actually read is generated from the same
+files, never typed:
+
+```bash
+npx decirance pack mycase --out decision-pack.md
+```
+
+A worked example of that output, for the fictional reference agent, is
+[examples/meridian-reply-agent/deployment-case.md](examples/meridian-reply-agent/deployment-case.md):
+the decision requested, what the agent is and where it may operate, the claims
+needing attention, every rule that fired, a ranked table of what will end the
+permit, and a section on what the pack does not tell you.
+
 No account, no server, no telemetry. To point it at your own agent,
 `npm run scan -- /path/to/your/agent-project` drafts a Passport; it reads only
 files a repository normally contains, and never reads a `.env` — environment
@@ -79,9 +92,9 @@ accountable owner can, and that is deliberate.
 | `schemas/` | Agent Passport, Context Contract, Evidence Manifest, Deployment Permit — JSON Schema |
 | `src/` | The reference assurance engine. Dependency-free TypeScript, runs in Node or a browser |
 | `cli/` | `decirance init / assess / permit / apply / diff / scan`, and three test harnesses |
-| `examples/meridian-reply-agent/` | A complete, reproducible reference assessment |
+| `examples/meridian-reply-agent/` | A complete, reproducible reference assessment, with its [Deployment Case pack](examples/meridian-reply-agent/deployment-case.md) |
 | `threat-library/` | Hazards and executable scenarios, mapped to NCSC guidance themes |
-| `framework-mappings/` | [NCSC mapping](framework-mappings/ncsc.md); others planned |
+| `framework-mappings/` | [OWASP Top 10 for Agentic Applications](framework-mappings/owasp-agentic.md), [NCSC](framework-mappings/ncsc.md), [NIST AI RMF](framework-mappings/nist-ai-rmf.md), [ISO/IEC 42001](framework-mappings/iso-42001.md), [OWASP LLM Top 10](framework-mappings/owasp-llm-top-10.md), [MITRE ATLAS](framework-mappings/mitre-atlas.md) |
 | `docs/` | [Methodology](docs/methodology.md), [quickstart](docs/quickstart.md), [dependency review sheet](docs/dependency-review.md) |
 
 ---

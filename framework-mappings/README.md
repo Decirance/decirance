@@ -12,6 +12,7 @@ of logos.
 | [nist-ai-rmf.md](nist-ai-rmf.md) — NIST AI RMF 1.0, GOVERN / MAP / MEASURE / MANAGE | 3 Sep 2026 | Drafted |
 | [iso-42001.md](iso-42001.md) — ISO/IEC 42001:2023 Annex A control objectives | 3 Sep 2026 | Drafted |
 | [owasp-llm-top-10.md](owasp-llm-top-10.md) — OWASP Top 10 for LLM Applications, 2025 list | 3 Sep 2026 | Drafted |
+| [owasp-agentic.md](owasp-agentic.md) — OWASP Top 10 for Agentic Applications, 2026 list (ASI01–ASI10) | 5 Oct 2026 | Drafted |
 | [mitre-atlas.md](mitre-atlas.md) — MITRE ATLAS tactics | 3 Sep 2026 | Drafted |
 
 Every mapping ends with a **gaps** section that names what is *not* covered.

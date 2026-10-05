@@ -85,6 +85,17 @@ export function runInit(args: string[]): number {
   }
 
   writeFileSync(join(target, 'README.md'), readme(target));
+  // Marks the case as the worked example, so `decirance pack` can label the
+  // document rather than leaving a realistic-looking pack to be mistaken for
+  // an assessment of a real system.
+  writeFileSync(join(target, '.decirance-fixture'), [
+    'Created by `decirance init`. Meridian Council does not exist.',
+    'Delete this file only once the case holds a real agent, its real context and',
+    'its real evidence — `decirance pack` reads it to label the pack as a worked',
+    'example, and that label is the only thing stopping a realistic document from',
+    'being mistaken for an assessment of a real system.',
+    '',
+  ].join('\n'));
 
   console.log('');
   console.log(`A complete Deployment Case is now in ${target}`);
