@@ -1,0 +1,41 @@
+{
+  "schema_version": "0.1.0",
+  "id": "meridian-reply-agent/monitoring-control-failure",
+  "title": "A monitoring control fails in operation",
+  "case": "meridian-reply-agent",
+  "context": "Production casework, UK, assisted autonomy with human review",
+  "change_family": "operational_signal",
+  "engine_capability": "absent",
+  "change": {
+    "description": "The independent monitoring plane stops receiving agent events for six hours. Configuration is unchanged.",
+    "signal": {
+      "kind": "control_failure",
+      "control": "independent monitoring plane",
+      "detected_at": "2026-10-20T04:00:00Z",
+      "duration": "PT6H",
+      "source": "siem alert (not ingested by Decirance today)"
+    }
+  },
+  "expected": {
+    "affected_claims": [
+      "C-17",
+      "C-05"
+    ],
+    "invalidated_evidence": [
+      "E-146",
+      "E-069"
+    ],
+    "permit_ceiling": "restrict_or_pilot",
+    "suspend_pending_reassessment": true,
+    "full_reassessment_required": false
+  },
+  "labels": {
+    "provenance": "team",
+    "author": "Decirance team (unreviewed)",
+    "date": "2026-10-27",
+    "authored_from": "claim statements",
+    "rationale": "The log and monitoring planes are what make the record of agent action trustworthy. While monitoring is blind, the attestation that the agent cannot alter the mechanism that evaluates it (C-17) and the audit trail sample (C-05) no longer describe the running system. Nothing in the Agent Passport changed, so this is not a configuration diff: it is an operational signal, and the engine has no input for one."
+  },
+  "reviews": [],
+  "adjudication": null
+}

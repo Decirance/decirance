@@ -1,0 +1,214 @@
+{
+  "schema_version": "0.1.0",
+  "case_id": "case_tariff_advice_v1",
+  "claims": [
+    {
+      "ref": "T-01",
+      "statement": "The agent cannot commit a customer to a tariff without an adviser approving the recommendation.",
+      "domain": "cyber",
+      "critical": true,
+      "coversTests": [
+        "adviser-approval-gate-test"
+      ],
+      "evidence": {
+        "supports": [
+          "F-01"
+        ],
+        "challenges": []
+      }
+    },
+    {
+      "ref": "T-02",
+      "statement": "Tariff figures in a draft match the published catalogue at the time of the draft.",
+      "domain": "cyber",
+      "critical": true,
+      "coversTests": [
+        "catalogue-fidelity-pack"
+      ],
+      "evidence": {
+        "supports": [
+          "F-02"
+        ],
+        "challenges": []
+      }
+    },
+    {
+      "ref": "T-03",
+      "statement": "Advice to a customer recorded as vulnerable is routed to a human before it is sent.",
+      "domain": "both",
+      "critical": true,
+      "coversTests": [
+        "vulnerability-routing-test"
+      ],
+      "evidence": {
+        "supports": [
+          "F-03"
+        ],
+        "challenges": []
+      }
+    },
+    {
+      "ref": "T-04",
+      "statement": "The agent reads only the account it was asked about.",
+      "domain": "cyber",
+      "critical": true,
+      "coversTests": [
+        "account-scope-test"
+      ],
+      "evidence": {
+        "supports": [
+          "F-04"
+        ],
+        "challenges": []
+      }
+    },
+    {
+      "ref": "T-05",
+      "statement": "Injected instructions in tariff terms do not change the recommendation.",
+      "domain": "cyber",
+      "critical": true,
+      "coversTests": [
+        "injection-challenge-pack"
+      ],
+      "evidence": {
+        "supports": [
+          "F-05"
+        ],
+        "challenges": []
+      }
+    },
+    {
+      "ref": "T-06",
+      "statement": "Every recommendation and adviser decision is reconstructable after the fact.",
+      "domain": "cyber",
+      "critical": false,
+      "coversTests": [
+        "audit-trail-sample"
+      ],
+      "evidence": {
+        "supports": [
+          "F-06"
+        ],
+        "challenges": []
+      }
+    },
+    {
+      "ref": "T-07",
+      "statement": "Customer data is processed only under the approved retention and residency terms.",
+      "domain": "cyber",
+      "critical": true,
+      "coversTests": [
+        "data-terms-review"
+      ],
+      "evidence": {
+        "supports": [
+          "F-07"
+        ],
+        "challenges": []
+      }
+    },
+    {
+      "ref": "T-08",
+      "statement": "The service meets its recovery objective after a tariff API failure.",
+      "domain": "resilience",
+      "critical": false,
+      "coversTests": [
+        "failover-rehearsal"
+      ],
+      "evidence": {
+        "supports": [
+          "F-08"
+        ],
+        "challenges": []
+      }
+    }
+  ],
+  "edges": [
+    {
+      "kind": "supports",
+      "sourceRef": "F-01",
+      "targetRef": "T-01",
+      "severedBy": [
+        "human_oversight",
+        "autonomy_level",
+        "permission_granted",
+        "tool_added"
+      ]
+    },
+    {
+      "kind": "supports",
+      "sourceRef": "F-02",
+      "targetRef": "T-02",
+      "severedBy": [
+        "model_version",
+        "model_provider",
+        "system_prompt",
+        "retrieval_service"
+      ]
+    },
+    {
+      "kind": "supports",
+      "sourceRef": "F-03",
+      "targetRef": "T-03",
+      "severedBy": [
+        "human_oversight",
+        "system_prompt",
+        "guardrail_config",
+        "model_version"
+      ]
+    },
+    {
+      "kind": "supports",
+      "sourceRef": "F-04",
+      "targetRef": "T-04",
+      "severedBy": [
+        "permission_granted",
+        "credential_scope",
+        "data_source_added"
+      ]
+    },
+    {
+      "kind": "supports",
+      "sourceRef": "F-05",
+      "targetRef": "T-05",
+      "severedBy": [
+        "model_version",
+        "model_provider",
+        "system_prompt",
+        "index_content_source",
+        "guardrail_config"
+      ]
+    },
+    {
+      "kind": "supports",
+      "sourceRef": "F-06",
+      "targetRef": "T-06",
+      "severedBy": [
+        "tool_added",
+        "logging_destination",
+        "log_plane"
+      ]
+    },
+    {
+      "kind": "supports",
+      "sourceRef": "F-07",
+      "targetRef": "T-07",
+      "severedBy": [
+        "data_processing_terms",
+        "data_residency",
+        "provider_plan",
+        "permitted_destination"
+      ]
+    },
+    {
+      "kind": "supports",
+      "sourceRef": "F-08",
+      "targetRef": "T-08",
+      "severedBy": [
+        "dependency_provider",
+        "recovery_objective",
+        "retrieval_service"
+      ]
+    }
+  ]
+}

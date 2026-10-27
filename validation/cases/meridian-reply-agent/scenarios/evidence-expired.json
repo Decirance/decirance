@@ -1,0 +1,38 @@
+{
+  "schema_version": "0.1.0",
+  "id": "meridian-reply-agent/evidence-expired",
+  "title": "Evidence passes its validity date",
+  "case": "meridian-reply-agent",
+  "context": "Production casework, UK, assisted autonomy with human review",
+  "change_family": "evidence_state",
+  "engine_capability": "absent",
+  "change": {
+    "description": "The injection challenge pack result reaches its stated validity limit with no re-run. No configuration changes.",
+    "signal": {
+      "kind": "evidence_expiry",
+      "evidence": "E-087",
+      "valid_until": "2026-09-18T00:00:00Z",
+      "as_of": "2026-10-27T00:00:00Z"
+    }
+  },
+  "expected": {
+    "affected_claims": [
+      "C-04"
+    ],
+    "invalidated_evidence": [
+      "E-087"
+    ],
+    "permit_ceiling": "restrict_or_pilot",
+    "suspend_pending_reassessment": true,
+    "full_reassessment_required": false
+  },
+  "labels": {
+    "provenance": "team",
+    "author": "Decirance team (unreviewed)",
+    "date": "2026-10-27",
+    "authored_from": "claim statements",
+    "rationale": "A result with a stated validity window stops supporting a claim when the window closes, whether or not anything changed. C-04 is critical and is contradicted by a standing finding (E-112), so the only support it has is the expired pack."
+  },
+  "reviews": [],
+  "adjudication": null
+}

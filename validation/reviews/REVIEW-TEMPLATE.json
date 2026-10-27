@@ -1,0 +1,31 @@
+{
+  "schema_version": "0.1.0",
+  "note": "Copy this file, fill it in, and open a pull request adding it to validation/reviews/. One file per reviewer per case. Do not edit the scenarios themselves: a reviewer changing the fixture is indistinguishable from the fixture having been right.",
+  "reviewer": {
+    "id": "R-xx",
+    "expertise": "security | assurance | domain | regulatory",
+    "affiliation": "your organisation, or independent",
+    "saw_decirance_output_first": false
+  },
+  "case": "meridian-reply-agent",
+  "decisions": [
+    {
+      "scenario": "meridian-reply-agent/model-version",
+      "decision": "agree | disagree | partially_agree",
+      "confidence": "high | medium | low",
+      "proposed": {
+        "affected_claims": [
+          "C-04",
+          "C-12"
+        ],
+        "invalidated_evidence": [
+          "E-087",
+          "E-124"
+        ],
+        "permit_consequence": "continue | continue_with_conditions | restrict_or_pilot | suspend | reject",
+        "full_reassessment_required": false
+      },
+      "notes": "Why. Especially where you disagree: that is the part worth recording."
+    }
+  ]
+}

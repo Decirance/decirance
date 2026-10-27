@@ -1,0 +1,46 @@
+{
+  "schema_version": "0.1.0",
+  "note": "Tests a change kind obliges the organisation to run, regardless of which edges it severs.",
+  "obligations": {
+    "model_version": [
+      "injection-challenge-pack",
+      "rag-poisoning-pack"
+    ],
+    "system_prompt": [
+      "injection-challenge-pack"
+    ],
+    "tool_added": [
+      "least-privilege-review",
+      "audit-trail-sample",
+      "external-send-gate-test"
+    ],
+    "permission_granted": [
+      "least-privilege-review",
+      "human-approval-workflow-test"
+    ],
+    "mcp_server_added": [
+      "mcp-manifest-signature-check",
+      "tool-description-poisoning-pack"
+    ],
+    "mcp_server_changed": [
+      "mcp-manifest-signature-check",
+      "tool-description-poisoning-pack"
+    ],
+    "index_content_source": [
+      "retrieval-allowlist-review",
+      "rag-poisoning-pack"
+    ],
+    "human_oversight": [
+      "human-approval-workflow-test",
+      "external-send-gate-test"
+    ],
+    "credential_scope": [
+      "credential-scope-review",
+      "token-lifetime-check"
+    ],
+    "permitted_destination": [
+      "egress-containment-test",
+      "proxy-reachability-scan"
+    ]
+  }
+}

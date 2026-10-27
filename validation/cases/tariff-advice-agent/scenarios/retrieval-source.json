@@ -1,0 +1,42 @@
+{
+  "schema_version": "0.1.0",
+  "id": "tariff-advice-agent/retrieval-source",
+  "title": "Supplier terms feed added to retrieval",
+  "case": "tariff-advice-agent",
+  "context": "Domestic energy advice, UK, adviser-approved output",
+  "change_family": "passport_diff",
+  "engine_capability": "supported",
+  "change": {
+    "description": "A third-party supplier terms feed is added to the retrieval index.",
+    "passport_patch": {
+      "components": {
+        "index_content_sources": [
+          "internal:tariff-terms",
+          "external:supplier-terms-feed"
+        ]
+      }
+    }
+  },
+  "expected": {
+    "affected_claims": [
+      "T-05",
+      "T-02"
+    ],
+    "invalidated_evidence": [
+      "F-05",
+      "F-02"
+    ],
+    "permit_ceiling": "restrict_or_pilot",
+    "suspend_pending_reassessment": true,
+    "full_reassessment_required": false
+  },
+  "labels": {
+    "provenance": "team",
+    "author": "Decirance team (unreviewed)",
+    "date": "2026-10-27",
+    "authored_from": "claim statements",
+    "rationale": "Text from outside the organisation now reaches the model, so the injection pack no longer covers the surface (T-05), and figures may be drawn from a feed the catalogue fidelity pack never saw (T-02)."
+  },
+  "reviews": [],
+  "adjudication": null
+}

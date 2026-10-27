@@ -1,0 +1,41 @@
+{
+  "schema_version": "0.1.0",
+  "id": "meridian-reply-agent/model-version",
+  "title": "Model version upgraded",
+  "case": "meridian-reply-agent",
+  "context": "Production casework, UK, assisted autonomy with human review",
+  "change_family": "passport_diff",
+  "engine_capability": "supported",
+  "change": {
+    "description": "The provider ships a new model version. No other configuration changes.",
+    "passport_patch": {
+      "components": {
+        "model": {
+          "version": "2026-09-01"
+        }
+      }
+    }
+  },
+  "expected": {
+    "affected_claims": [
+      "C-04",
+      "C-12"
+    ],
+    "invalidated_evidence": [
+      "E-087",
+      "E-124"
+    ],
+    "permit_ceiling": "restrict_or_pilot",
+    "suspend_pending_reassessment": true,
+    "full_reassessment_required": false
+  },
+  "labels": {
+    "provenance": "team",
+    "author": "Decirance team (unreviewed)",
+    "date": "2026-10-27",
+    "authored_from": "claim statements",
+    "rationale": "Injection resistance (C-04) and resistance to executable instruction in retrieved content (C-12) are behavioural properties of the model. Results obtained on the previous version say nothing about the new one. Containment, credential and oversight evidence is unaffected because none of it is behavioural."
+  },
+  "reviews": [],
+  "adjudication": null
+}

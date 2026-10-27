@@ -42,7 +42,8 @@
     "LICENSES",
     "NOTICE",
     "LICENSING.md",
-    "TRADEMARKS.md"
+    "TRADEMARKS.md",
+    "validation"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json && tsx ./cli/fix-extensions.ts dist",
@@ -52,13 +53,14 @@
     "diff": "tsx ./cli/decirance.ts diff",
     "verify": "tsx ./cli/verify.ts",
     "validate": "tsx ./cli/validate.ts",
-    "test": "tsx ./cli/verify.ts && tsx ./cli/validate.ts && tsx ./cli/journey.ts",
+    "test": "tsx ./cli/verify.ts && tsx ./cli/validate.ts && tsx ./cli/journey.ts && tsx ./cli/validate-method.ts",
     "prepublishOnly": "npm run typecheck && npm run test && npm run dependency-review && npm run build",
     "dependency-review": "tsx ./cli/dependency-review.ts",
     "journey": "tsx ./cli/journey.ts",
     "init": "tsx ./cli/decirance.ts init",
     "assess": "tsx ./cli/decirance.ts assess",
-    "permit": "tsx ./cli/decirance.ts permit"
+    "permit": "tsx ./cli/decirance.ts permit",
+    "validate-method": "tsx ./cli/validate-method.ts"
   },
   "devDependencies": {
     "typescript": "~5.9.3",

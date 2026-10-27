@@ -1,0 +1,41 @@
+{
+  "schema_version": "0.1.0",
+  "id": "meridian-reply-agent/mcp-tool-description",
+  "title": "MCP server changes a tool description",
+  "case": "meridian-reply-agent",
+  "context": "Production casework, UK, assisted autonomy with human review",
+  "change_family": "passport_diff",
+  "engine_capability": "supported",
+  "change": {
+    "description": "The case-store MCP server is upgraded and one tool description changes wording.",
+    "passport_patch": {
+      "components": {
+        "mcp_servers": [
+          "mcp:case-store@1.3"
+        ]
+      }
+    }
+  },
+  "expected": {
+    "affected_claims": [
+      "C-14",
+      "C-12"
+    ],
+    "invalidated_evidence": [
+      "E-130",
+      "E-124"
+    ],
+    "permit_ceiling": "restrict_or_pilot",
+    "suspend_pending_reassessment": true,
+    "full_reassessment_required": false
+  },
+  "labels": {
+    "provenance": "team",
+    "author": "Decirance team (unreviewed)",
+    "date": "2026-10-27",
+    "authored_from": "claim statements",
+    "rationale": "Signed or allowlisted descriptions (C-14) were attested against the previous manifest. A tool description is also text the model reads, so a changed description is a vector for instruction injection (C-12) and the RAG poisoning pack no longer covers the current surface."
+  },
+  "reviews": [],
+  "adjudication": null
+}

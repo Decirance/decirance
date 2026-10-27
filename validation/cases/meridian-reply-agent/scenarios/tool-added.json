@@ -1,0 +1,61 @@
+{
+  "schema_version": "0.1.0",
+  "id": "meridian-reply-agent/tool-added",
+  "title": "A send-capable tool is added",
+  "case": "meridian-reply-agent",
+  "context": "Production casework, UK, assisted autonomy with human review",
+  "change_family": "passport_diff",
+  "engine_capability": "supported",
+  "change": {
+    "description": "An email.send tool is added to the agent, without a corresponding permission.",
+    "passport_patch": {
+      "components": {
+        "tools": [
+          {
+            "id": "case.read"
+          },
+          {
+            "id": "document.read"
+          },
+          {
+            "id": "response.draft"
+          },
+          {
+            "id": "review.request"
+          },
+          {
+            "id": "email.send"
+          }
+        ]
+      }
+    }
+  },
+  "expected": {
+    "affected_claims": [
+      "C-01",
+      "C-02",
+      "C-04",
+      "C-05",
+      "C-06"
+    ],
+    "invalidated_evidence": [
+      "E-093",
+      "E-104",
+      "E-087",
+      "E-069",
+      "E-061"
+    ],
+    "permit_ceiling": "reject",
+    "suspend_pending_reassessment": true,
+    "full_reassessment_required": false
+  },
+  "labels": {
+    "provenance": "team",
+    "author": "Decirance team (unreviewed)",
+    "date": "2026-10-27",
+    "authored_from": "claim statements",
+    "rationale": "A tool that can send externally defeats the reviewer gate the case rests on (C-06), gives injection a new target (C-04), is not covered by the audit sample (C-05) and widens what the agent can do (C-02). It also reaches durable external effect without a named approver (C-01). The Context Contract prohibits message:send, so the capability itself is a boundary question even before a permission is granted."
+  },
+  "reviews": [],
+  "adjudication": null
+}

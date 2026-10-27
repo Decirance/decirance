@@ -1,0 +1,107 @@
+{
+  "schema_version": "0.1.0",
+  "agent_id": "agt_tariff_advice",
+  "agent_version": "1.4.0",
+  "owner": "Northgrid Energy — Customer Operations (fictional)",
+  "purpose": "Answer domestic customer questions about tariffs and switching, and draft a recommended tariff for an adviser to approve.",
+  "environment": "uk-south-prod",
+  "created_at": "2026-10-01T00:00:00.000Z",
+  "components": {
+    "model": {
+      "provider": "anthropic",
+      "model": "claude-sonnet-5",
+      "version": "2026-04-01"
+    },
+    "prompt_digest": "sha256:a31c…40",
+    "tools": [
+      {
+        "id": "tariff.lookup"
+      },
+      {
+        "id": "account.read"
+      },
+      {
+        "id": "recommendation.draft"
+      }
+    ],
+    "data_sources": [
+      "tariff-catalogue",
+      "account-store"
+    ],
+    "guardrails": [
+      "pii-redaction",
+      "advice-boundary-filter"
+    ],
+    "identity": {
+      "principal": "svc:tariff-advice",
+      "binding": "workload-identity"
+    },
+    "dependencies": [
+      "tariff-api",
+      "model-api"
+    ],
+    "mcp_servers": [],
+    "index_content_sources": [
+      "internal:tariff-terms"
+    ],
+    "memory_write_policy": {
+      "writers": [],
+      "retention": "none",
+      "rollback": "not-applicable"
+    },
+    "model_artifact_digest": "sha256:5f20…11"
+  },
+  "operating": {
+    "autonomy_level": "assisted",
+    "human_review": {
+      "customerFacingAdvice": "required"
+    },
+    "recovery_objectives": {
+      "rto": "4h",
+      "rpo": "1h"
+    },
+    "permissions": [
+      "tariff:read",
+      "account:read",
+      "draft:create"
+    ]
+  },
+  "containment": {
+    "network_egress": "allowlist",
+    "permitted_destinations": [
+      "tariff-api.internal",
+      "model-api.anthropic.com"
+    ],
+    "sandbox_image": "northgrid-advice-sandbox:1.2.0",
+    "package_registries": [
+      "internal-mirror.northgrid.example"
+    ],
+    "shared_storage": [],
+    "inter_agent_channels": [],
+    "max_concurrent_instances": "8",
+    "safety_classifiers": [
+      "advice-boundary-filter"
+    ],
+    "shutdown_mechanism": "identity-revocation",
+    "credential_scopes": [
+      "account:read@30m"
+    ]
+  },
+  "observability": {
+    "logging_destination": "siem:northgrid",
+    "log_plane": "independent",
+    "monitoring_plane": "shared",
+    "evaluation_harness": "inspect@0.3.44",
+    "scorer_config": "sha256:7ac1…33"
+  },
+  "entitlement": {
+    "provider_plan": "enterprise",
+    "account_binding": "org:northgrid",
+    "data_processing_terms": {
+      "promptRetention": "none",
+      "trainingUse": "prohibited"
+    },
+    "data_residency": "uk",
+    "expiry": "2027-06-30"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "schema_version": "0.1.0",
+  "id": "meridian-reply-agent/outbound-destination",
+  "title": "A new outbound destination is permitted",
+  "case": "meridian-reply-agent",
+  "context": "Production casework, UK, assisted autonomy with human review",
+  "change_family": "passport_diff",
+  "engine_capability": "supported",
+  "change": {
+    "description": "A partner API is added to the egress allowlist.",
+    "passport_patch": {
+      "containment": {
+        "permitted_destinations": [
+          "case-store.internal",
+          "model-api.anthropic.com",
+          "partner-api.supplier.example"
+        ]
+      }
+    }
+  },
+  "expected": {
+    "affected_claims": [
+      "C-15",
+      "C-10"
+    ],
+    "invalidated_evidence": [
+      "E-140",
+      "E-118"
+    ],
+    "permit_ceiling": "restrict_or_pilot",
+    "suspend_pending_reassessment": true,
+    "full_reassessment_required": false
+  },
+  "labels": {
+    "provenance": "team",
+    "author": "Decirance team (unreviewed)",
+    "date": "2026-10-27",
+    "authored_from": "claim statements",
+    "rationale": "Network access is no longer constrained to the destinations the containment test covered (C-15). The new destination is a third party, so the approved processing and residency terms no longer describe where customer data can go (C-10)."
+  },
+  "reviews": [],
+  "adjudication": null
+}

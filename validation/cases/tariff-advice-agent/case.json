@@ -1,0 +1,14 @@
+{
+  "schema_version": "0.1.0",
+  "id": "tariff-advice-agent",
+  "title": "Northgrid tariff advice agent",
+  "fictional": true,
+  "summary": "A second, deliberately different agent: domestic energy tariff advice with an adviser gate, eight claims, eight evidence artefacts. Exists so the rules are not measured only against the case they were written for.",
+  "sources": {
+    "agent_passport": "./agent-passport.json",
+    "context_contract": "./context-contract.json",
+    "assurance_graph": "./assurance-graph.json",
+    "evidence_manifest": "./evidence-manifest.json"
+  },
+  "graph_authored_by": "case author"
+}

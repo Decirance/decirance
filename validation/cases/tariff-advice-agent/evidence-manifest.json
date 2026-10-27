@@ -1,0 +1,62 @@
+{
+  "schema_version": "0.1.0",
+  "case_id": "case_tariff_advice_v1",
+  "evidence": [
+    {
+      "ref": "F-01",
+      "title": "Adviser approval gate walkthrough",
+      "source_kind": "test_result",
+      "collected_at": "2026-10-02T00:00:00Z",
+      "collected_by": "Customer Operations"
+    },
+    {
+      "ref": "F-02",
+      "title": "Catalogue fidelity pack, 500 drafts",
+      "source_kind": "evaluation",
+      "collected_at": "2026-10-02T00:00:00Z",
+      "collected_by": "Advice Quality"
+    },
+    {
+      "ref": "F-03",
+      "title": "Vulnerability routing test",
+      "source_kind": "test_result",
+      "collected_at": "2026-10-03T00:00:00Z",
+      "collected_by": "Customer Operations"
+    },
+    {
+      "ref": "F-04",
+      "title": "Account scope test",
+      "source_kind": "test_result",
+      "collected_at": "2026-10-03T00:00:00Z",
+      "collected_by": "Platform Security"
+    },
+    {
+      "ref": "F-05",
+      "title": "Injection challenge pack",
+      "source_kind": "red_team",
+      "collected_at": "2026-10-04T00:00:00Z",
+      "collected_by": "Platform Security"
+    },
+    {
+      "ref": "F-06",
+      "title": "Audit trail sample",
+      "source_kind": "log_sample",
+      "collected_at": "2026-10-04T00:00:00Z",
+      "collected_by": "Platform Security"
+    },
+    {
+      "ref": "F-07",
+      "title": "Enterprise agreement and data terms",
+      "source_kind": "attestation",
+      "collected_at": "2026-10-01T00:00:00Z",
+      "collected_by": "Legal"
+    },
+    {
+      "ref": "F-08",
+      "title": "Failover rehearsal",
+      "source_kind": "test_result",
+      "collected_at": "2026-10-05T00:00:00Z",
+      "collected_by": "Operations"
+    }
+  ]
+}

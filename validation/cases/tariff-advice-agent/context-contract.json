@@ -1,0 +1,59 @@
+{
+  "schema_version": "0.1.0",
+  "contract_id": "ctx_northgrid_tariff_advice",
+  "contract_version": "1.4.0",
+  "owner": "Northgrid Energy — Head of Customer Operations (fictional)",
+  "purpose": "Answer domestic customer tariff questions and draft a recommended tariff for an adviser to approve.",
+  "scope": {
+    "intended_users": [
+      "Customer advisers"
+    ],
+    "affected_parties": [
+      "Domestic energy customers, including customers recorded as vulnerable"
+    ],
+    "permitted_actions": [
+      "tariff:read",
+      "account:read",
+      "draft:create"
+    ],
+    "prohibited_actions": [
+      "tariff:switch",
+      "account:write",
+      "payment:execute",
+      "message:send"
+    ],
+    "accessible_data": [
+      "tariff-catalogue",
+      "account-store",
+      "internal:tariff-terms"
+    ],
+    "connected_tools": [
+      "tariff.lookup",
+      "account.read",
+      "recommendation.draft"
+    ]
+  },
+  "operating": {
+    "autonomy_level": "assisted",
+    "required_human_oversight": [
+      "Customer-facing advice",
+      "Any tariff change"
+    ],
+    "dependencies": [
+      "tariff-api",
+      "model-api"
+    ],
+    "recovery_objectives": {
+      "rto": "4h",
+      "rpo": "1h"
+    }
+  },
+  "risk": {
+    "appetite": "Very low for any action that changes a customer's tariff or price; low for advice reaching a customer unreviewed.",
+    "stop_conditions": [
+      "Any tariff change executed without an adviser approving it",
+      "Advice reaching a customer recorded as vulnerable without human review",
+      "Tariff figures in a draft not matching the published catalogue"
+    ]
+  }
+}

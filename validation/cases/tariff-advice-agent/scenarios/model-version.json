@@ -1,0 +1,43 @@
+{
+  "schema_version": "0.1.0",
+  "id": "tariff-advice-agent/model-version",
+  "title": "Model version upgraded",
+  "case": "tariff-advice-agent",
+  "context": "Domestic energy advice, UK, adviser-approved output",
+  "change_family": "passport_diff",
+  "engine_capability": "supported",
+  "change": {
+    "description": "The provider ships a new model version.",
+    "passport_patch": {
+      "components": {
+        "model": {
+          "version": "2026-09-01"
+        }
+      }
+    }
+  },
+  "expected": {
+    "affected_claims": [
+      "T-02",
+      "T-03",
+      "T-05"
+    ],
+    "invalidated_evidence": [
+      "F-02",
+      "F-03",
+      "F-05"
+    ],
+    "permit_ceiling": "restrict_or_pilot",
+    "suspend_pending_reassessment": true,
+    "full_reassessment_required": false
+  },
+  "labels": {
+    "provenance": "team",
+    "author": "Decirance team (unreviewed)",
+    "date": "2026-10-27",
+    "authored_from": "claim statements",
+    "rationale": "Catalogue fidelity, vulnerability routing and injection resistance are all behavioural and were measured on the previous version. The adviser gate (T-01) is structural and survives."
+  },
+  "reviews": [],
+  "adjudication": null
+}

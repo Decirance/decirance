@@ -1,0 +1,42 @@
+{
+  "schema_version": "0.1.0",
+  "id": "meridian-reply-agent/human-approval-removed",
+  "title": "Human approval removed for external send",
+  "case": "meridian-reply-agent",
+  "context": "Production casework, UK, assisted autonomy with human review",
+  "change_family": "passport_diff",
+  "engine_capability": "supported",
+  "change": {
+    "description": "The human review requirement for external send is removed.",
+    "passport_patch": {
+      "operating": {
+        "human_review": {
+          "externalSend": "not_required",
+          "caseUpdate": "required"
+        }
+      }
+    }
+  },
+  "expected": {
+    "affected_claims": [
+      "C-01",
+      "C-06"
+    ],
+    "invalidated_evidence": [
+      "E-093",
+      "E-104"
+    ],
+    "permit_ceiling": "reject",
+    "suspend_pending_reassessment": true,
+    "full_reassessment_required": false
+  },
+  "labels": {
+    "provenance": "team",
+    "author": "Decirance team (unreviewed)",
+    "date": "2026-10-27",
+    "authored_from": "claim statements",
+    "rationale": "Both claims rest on a human in the path. The reviewer gate evidence describes a workflow that no longer exists (E-093), and the Context Contract attestation describes oversight the configuration no longer provides (E-104). The contract requires oversight for external send, so removing it is a breach rather than a gap."
+  },
+  "reviews": [],
+  "adjudication": null
+}

@@ -1,0 +1,53 @@
+{
+  "schema_version": "0.1.0",
+  "id": "meridian-reply-agent/unknown-change",
+  "title": "An unclassified configuration field changes",
+  "case": "meridian-reply-agent",
+  "context": "Production casework, UK, assisted autonomy with human review",
+  "change_family": "passport_diff",
+  "engine_capability": "supported",
+  "change": {
+    "description": "A field the change taxonomy does not classify appears in the Agent Passport.",
+    "passport_patch": {
+      "components": {
+        "experimental_router": "weighted-v2"
+      }
+    }
+  },
+  "expected": {
+    "affected_claims": [
+      "C-01",
+      "C-02",
+      "C-03",
+      "C-04",
+      "C-05",
+      "C-06",
+      "C-07",
+      "C-08",
+      "C-09",
+      "C-10",
+      "C-11",
+      "C-12",
+      "C-13",
+      "C-14",
+      "C-15",
+      "C-16",
+      "C-17",
+      "C-18",
+      "C-19"
+    ],
+    "invalidated_evidence": [],
+    "permit_ceiling": "undetermined",
+    "suspend_pending_reassessment": true,
+    "full_reassessment_required": true
+  },
+  "labels": {
+    "provenance": "team",
+    "author": "Decirance team (unreviewed)",
+    "date": "2026-10-27",
+    "authored_from": "claim statements",
+    "rationale": "An unclassified difference could sever anything, so nothing may be assumed preserved: every claim is in question and a full reassessment is required. Evidence is not individually listed as invalidated because the engine cannot know which edges the unknown change touches — the honest answer is that none of it can be relied on until the change is classified. No ceiling can be computed for an unclassified change: the permit stops until the change is classified, and publishing any ceiling would overstate what is known."
+  },
+  "reviews": [],
+  "adjudication": null
+}

@@ -1,0 +1,16 @@
+{
+  "schema_version": "0.1.0",
+  "id": "meridian-reply-agent",
+  "title": "Meridian Council reply agent",
+  "fictional": true,
+  "summary": "Drafts replies to resident casework for human review. Nineteen claims, twenty-one evidence artefacts, twenty-five edges.",
+  "sources": {
+    "agent_passport": "../../../examples/meridian-reply-agent/agent-passport.json",
+    "context_contract": "../../../examples/meridian-reply-agent/context-contract.json",
+    "assurance_graph": "../../../examples/meridian-reply-agent/assurance-graph.json",
+    "evidence_manifest": "../../../examples/meridian-reply-agent/evidence-manifest.json"
+  },
+  "obligations": "../../obligations/meridian.json",
+  "graph_authored_by": "engine reference constants",
+  "graph_authored_by_note": "This graph is generated from the engine's own example constants, so a disagreement here points at the severedBy taxonomy rather than at one deployer's modelling."
+}

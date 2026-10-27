@@ -47,6 +47,13 @@ import {
   assessIntegrity,
   applyIntegrityGate,
   EXAMPLE_PASSPORT_V5_CONTAINMENT,
+  acceptedValue,
+  draftProposal,
+  fixtureProvider,
+  partitionProposals,
+  reviewProposal,
+  selectProvider,
+  validateProposal,
   parsePassport,
   serialisePassport,
   deriveClaimState,
@@ -1106,6 +1113,114 @@ check('the invariant still decides over the enlarged state space',
     return r.holds && ALL_PERMIT_STATES.length === 12;
   })(),
   'Adding states must extend the exhaustive check, not quietly narrow its coverage. There is one state list, so it cannot fall behind.');
+
+section('Assistant boundary');
+/**
+ * Model output cannot enter an assurance case without a named person.
+ *
+ * The assistant does not exist yet; this is its boundary, written first so it
+ * cannot be built in a way that goes round it. Every check here is about the
+ * gate rather than about extraction quality — quality is measured separately,
+ * against labelled examples, once there is a live provider to measure.
+ */
+{
+  const source = {
+    documentId: 'doc-1', documentDigest: 'sha256:aa',
+    locator: 'p.4 3.2', quote: 'Access to customer records is restricted to named caseworkers.',
+  };
+  const attribution = {
+    provider: 'test', model: 'test-model', modelVersion: '1',
+    promptVersion: 'p1', workflowVersion: 'w1', live: true,
+  };
+  const draft = {
+    id: 'P-1', type: 'control_extraction' as const, sources: [source], model: attribution,
+    createdAt: '2026-10-27T00:00:00Z',
+    confidence: { value: 0.72, basis: 'wording is explicit but the scope sentence is ambiguous' },
+    explanation: 'Proposes a control: records restricted to named caseworkers.',
+    proposedValue: { control: 'records-restricted-to-named-caseworkers' },
+  };
+  const proposed = draftProposal(draft);
+
+  check('a model can only produce PROPOSED', proposed.status === 'PROPOSED',
+    'Any other starting state would let an assistant write straight into the case.');
+
+  let read = 'did not throw';
+  try { acceptedValue(proposed); } catch (e) { read = (e as Error).message; }
+  check('the engine cannot read a value nobody accepted', read.includes('has not been accepted'),
+    'acceptedValue is the gate; if it returns for a PROPOSED record the gate is open.');
+
+  const accepted = reviewProposal(proposed, { decision: 'accept', reviewer: 'Ari Rios', reviewerRole: 'assurance_lead', at: '2026-10-27T09:00:00Z' });
+  check('a named person can accept, and then the value is readable',
+    accepted.ok && acceptedValue(accepted.proposal) === proposed.proposedValue,
+    'Acceptance by a named person is the only path from proposal to usable record.');
+
+  const anonymous = reviewProposal(proposed, { decision: 'accept', reviewer: '  ', reviewerRole: '', at: 'now' });
+  check('a review with nobody named is refused', !anonymous.ok,
+    'An acceptance with no name is the most consequential blank field in the system.');
+
+  const edited = reviewProposal(proposed, { decision: 'edit', reviewer: 'Ari Rios', reviewerRole: 'assurance_lead', at: 'now', value: { control: 'records-restricted-on-the-assigned-case' }, reason: 'scope was wider than the passage supports' });
+  check('an edit keeps the original proposal alongside the accepted value',
+    edited.ok && edited.proposal.status === 'EDITED'
+      && JSON.stringify(edited.proposal.proposedValue) === JSON.stringify(draft.proposedValue)
+      && acceptedValue(edited.proposal) !== draft.proposedValue,
+    'How much a reviewer had to change is the measurement of whether the assistant helps.');
+
+  const editWithoutValue = reviewProposal(proposed, { decision: 'edit', reviewer: 'A', reviewerRole: 'r', at: 'now', value: undefined as never, reason: 'x' });
+  check('an edit with no value is refused', !editWithoutValue.ok, 'Otherwise EDITED means nothing.');
+
+  const silentReject = reviewProposal(proposed, { decision: 'reject', reviewer: 'A', reviewerRole: 'r', at: 'now', reason: '' });
+  check('a rejection with no reason is refused', !silentReject.ok, 'A rejection nobody explained teaches nobody.');
+
+  const rejected = reviewProposal(proposed, { decision: 'reject', reviewer: 'Ari Rios', reviewerRole: 'assurance_lead', at: 'now', reason: 'the passage is about people, not about the agent' });
+  let readRejected = 'did not throw';
+  try { acceptedValue(rejected.ok ? rejected.proposal : proposed); } catch (e) { readRejected = (e as Error).message; }
+  check('a rejected proposal has no usable value', readRejected.includes('was rejected'),
+    'Rejection must be as binding as acceptance.');
+
+  const second = accepted.ok
+    ? reviewProposal(accepted.proposal, { decision: 'reject', reviewer: 'B', reviewerRole: 'r', at: 'now', reason: 'changed my mind' })
+    : { ok: true as const, proposal: proposed };
+  check('a reviewed proposal cannot be re-decided in place', !second.ok,
+    'Overwriting a review erases the fact that someone had already accepted it.');
+
+  check('a proposal with no source passage is refused',
+    !validateProposal({ ...proposed, sources: [] }).ok,
+    'A proposal with no source is an assertion, and a reviewer cannot check it.');
+  check('a proposal that does not say which model produced it is refused',
+    !validateProposal({ ...proposed, model: { ...attribution, modelVersion: '' } }).ok,
+    'Two model versions give different output; a record that omits it cannot be reproduced.');
+  check('a proposal that does not state whether it is live is refused',
+    !validateProposal({ ...proposed, model: { provider: 'p', model: 'm', modelVersion: '1', promptVersion: 'p1', workflowVersion: 'w1' } }).ok,
+    'A fixture presented as a live result is the dishonesty this field exists to prevent.');
+  check('a confidence outside 0 to 1 is refused',
+    !validateProposal({ ...proposed, confidence: { value: 1.4, basis: 'x' } }).ok, 'Range is part of meaning.');
+  check('a status past PROPOSED with no review is refused',
+    !validateProposal({ ...proposed, status: 'ACCEPTED' }).ok,
+    'Otherwise a caller could mint an accepted record with nobody behind it.');
+  check('a well-formed proposal validates (positive control)', validateProposal(proposed).ok,
+    'If this fails the validator rejects everything and the checks above prove nothing.');
+
+  const fixture = fixtureProvider('worked-example', [draft]);
+  check('a fixture provider says it is not live', fixture.live === false && fixture.id.startsWith('fixture:'),
+    'A demonstration must be impossible to mistake for a model result.');
+  const fixtureDrafts = await fixture.propose({ type: 'control_extraction', documents: [] });
+  check('a fixture provider stamps every proposal as not live',
+    fixtureDrafts.length > 0 && fixtureDrafts.every((d) => d.model.live === false),
+    'The label has to travel with the record, not sit on the provider.');
+  check('a deployment that requires a live provider refuses fixtures',
+    !selectProvider([fixture], { requireLive: true }).ok,
+    'Fixtures standing in for a live provider is how an evaluation reports numbers nobody produced.');
+  check('and accepts one when a live provider is present',
+    selectProvider([fixture, { ...fixture, id: 'live', live: true }], { requireLive: true }).ok,
+    'Otherwise a correctly configured deployment could not run the assistant at all.');
+
+  const batch = [proposed, accepted.ok ? accepted.proposal : proposed, rejected.ok ? rejected.proposal : proposed];
+  const split = partitionProposals(batch);
+  check('a batch reports what a reviewer actually did with it',
+    split.usable.length === 1 && split.awaitingReview.length === 1 && split.rejected.length === 1
+      && split.counts.proposed === 1 && split.counts.accepted === 1 && split.counts.rejected === 1,
+    'Offered, accepted, edited and rejected counts are the measurement of whether the assistant earns its place.');
+}
 
 section('Passport file format');
 /**

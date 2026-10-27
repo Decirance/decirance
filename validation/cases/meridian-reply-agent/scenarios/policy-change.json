@@ -1,0 +1,34 @@
+{
+  "schema_version": "0.1.0",
+  "id": "meridian-reply-agent/policy-change",
+  "title": "The organisation adds a baseline rule",
+  "case": "meridian-reply-agent",
+  "context": "Production casework, UK, assisted autonomy with human review",
+  "change_family": "external_policy",
+  "engine_capability": "partial",
+  "change": {
+    "description": "The Organisation Assurance Baseline is revised to require a documented vulnerable-person impact assessment for any agent that drafts correspondence to residents.",
+    "signal": {
+      "kind": "baseline_revision",
+      "from_revision": "2026.2",
+      "to_revision": "2026.3",
+      "new_rule": "ORG-014 vulnerable-person impact assessment required"
+    }
+  },
+  "expected": {
+    "affected_claims": [],
+    "invalidated_evidence": [],
+    "permit_ceiling": "continue_with_conditions",
+    "suspend_pending_reassessment": false,
+    "full_reassessment_required": false
+  },
+  "labels": {
+    "provenance": "team",
+    "author": "Decirance team (unreviewed)",
+    "date": "2026-10-27",
+    "authored_from": "claim statements",
+    "rationale": "No existing evidence becomes false: the agent has not changed. A new obligation appears with no evidence against it, so the case gains a gap rather than losing support, and the permit should continue only with the assessment as a condition. The engine can check a contract against a baseline but has no path from a baseline revision to a reassessment obligation."
+  },
+  "reviews": [],
+  "adjudication": null
+}

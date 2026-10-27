@@ -1,0 +1,42 @@
+{
+  "schema_version": "0.1.0",
+  "id": "tariff-advice-agent/unknown-change",
+  "title": "An unclassified configuration field changes",
+  "case": "tariff-advice-agent",
+  "context": "Domestic energy advice, UK, adviser-approved output",
+  "change_family": "passport_diff",
+  "engine_capability": "supported",
+  "change": {
+    "description": "A field the taxonomy does not classify appears in the Agent Passport.",
+    "passport_patch": {
+      "components": {
+        "experimental_ranker": "bandit-v1"
+      }
+    }
+  },
+  "expected": {
+    "affected_claims": [
+      "T-01",
+      "T-02",
+      "T-03",
+      "T-04",
+      "T-05",
+      "T-06",
+      "T-07",
+      "T-08"
+    ],
+    "invalidated_evidence": [],
+    "permit_ceiling": "undetermined",
+    "suspend_pending_reassessment": true,
+    "full_reassessment_required": true
+  },
+  "labels": {
+    "provenance": "team",
+    "author": "Decirance team (unreviewed)",
+    "date": "2026-10-27",
+    "authored_from": "claim statements",
+    "rationale": "Fail closed: an unclassified change could sever any edge, so no claim may be assumed preserved until it is classified. No ceiling can be computed for an unclassified change: the permit stops until the change is classified, and publishing any ceiling would overstate what is known."
+  },
+  "reviews": [],
+  "adjudication": null
+}

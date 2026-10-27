@@ -1,0 +1,39 @@
+{
+  "schema_version": "0.1.0",
+  "id": "meridian-reply-agent/system-prompt",
+  "title": "System prompt rewritten",
+  "case": "meridian-reply-agent",
+  "context": "Production casework, UK, assisted autonomy with human review",
+  "change_family": "passport_diff",
+  "engine_capability": "supported",
+  "change": {
+    "description": "The system prompt is edited to change tone and add a summarisation instruction.",
+    "passport_patch": {
+      "components": {
+        "prompt_digest": "sha256:7b41…e2"
+      }
+    }
+  },
+  "expected": {
+    "affected_claims": [
+      "C-04",
+      "C-12"
+    ],
+    "invalidated_evidence": [
+      "E-087",
+      "E-124"
+    ],
+    "permit_ceiling": "restrict_or_pilot",
+    "suspend_pending_reassessment": true,
+    "full_reassessment_required": false
+  },
+  "labels": {
+    "provenance": "team",
+    "author": "Decirance team (unreviewed)",
+    "date": "2026-10-27",
+    "authored_from": "claim statements",
+    "rationale": "The prompt is part of what was tested for injection resistance and for the handling of untrusted retrieved content. A tone change is not obviously safety-relevant, which is exactly why it cannot be assumed harmless: the injection pack was run against the old prompt."
+  },
+  "reviews": [],
+  "adjudication": null
+}

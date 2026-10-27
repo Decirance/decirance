@@ -1,0 +1,44 @@
+{
+  "schema_version": "0.1.0",
+  "id": "meridian-reply-agent/retrieval-source",
+  "title": "An external corpus is added to retrieval",
+  "case": "meridian-reply-agent",
+  "context": "Production casework, UK, assisted autonomy with human review",
+  "change_family": "passport_diff",
+  "engine_capability": "supported",
+  "change": {
+    "description": "An unvetted supplier knowledge base is added to the retrieval index.",
+    "passport_patch": {
+      "components": {
+        "index_content_sources": [
+          "internal:policy-library",
+          "external:supplier-kb"
+        ]
+      }
+    }
+  },
+  "expected": {
+    "affected_claims": [
+      "C-11",
+      "C-12",
+      "C-03"
+    ],
+    "invalidated_evidence": [
+      "E-121",
+      "E-124",
+      "E-098"
+    ],
+    "permit_ceiling": "restrict_or_pilot",
+    "suspend_pending_reassessment": true,
+    "full_reassessment_required": false
+  },
+  "labels": {
+    "provenance": "team",
+    "author": "Decirance team (unreviewed)",
+    "date": "2026-10-27",
+    "authored_from": "claim statements",
+    "rationale": "The allowlist and provenance review covered the previous sources (C-11), the poisoning pack was run against them (C-12), and retrieval is no longer limited to the assigned case and its linked history (C-03)."
+  },
+  "reviews": [],
+  "adjudication": null
+}
