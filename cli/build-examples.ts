@@ -24,6 +24,8 @@ import {
   serialiseContextContract,
   serialisePassport,
   stateAfterMaterialChange,
+  exampleShift,
+  shiftExampleDate,
   EXAMPLE_AGENT,
   EXAMPLE_CLAIMS,
   EXAMPLE_CONTEXT_CONTRACT,
@@ -40,6 +42,7 @@ import {
   EXAMPLE_PASSPORT_V4_LICENCE,
   EXAMPLE_PASSPORT_V4_POISONING,
   EXAMPLE_PASSPORT_V4_RESILIENCE,
+  EXAMPLE_PERMIT_DATES,
   EXAMPLE_SCENARIOS,
   type PassportSnapshot,
 } from '../src/index.ts';
@@ -150,6 +153,18 @@ function runScenario(name: string, to: PassportSnapshot, label: string) {
   return { name, summary: result.summary, recommendation: decision.recommendation };
 }
 
+/**
+ * How far the worked example moves to be read as a current case.
+ *
+ * The permit in this directory expired in September 2026 for as long as the
+ * dates were literals here: anyone running the quick start after that got a
+ * reference permit the engine's own invariant check would call expired, and
+ * `decirance pack` rendered it into a document. The intervals are authored in
+ * the engine (`example-timeline.ts`); the generator dates them against the day
+ * it runs, so regenerating refreshes the published files.
+ */
+const SHIFT = exampleShift();
+
 function main(): void {
   mkdirSync(deltaDir, { recursive: true });
   mkdirSync(threatDir, { recursive: true });
@@ -170,7 +185,7 @@ function main(): void {
       source_kind: e.sourceKind,
       scope_passport_digest: e.scopePassportHash,
       scope_contract_digest: 'contract:v3.2',
-      collected_at: new Date(e.collectedAt).toISOString(),
+      collected_at: shiftExampleDate(e.collectedAt, SHIFT).toISOString(),
       collected_by: e.owner,
       quality: {
         provenance: e.quality.provenance,
@@ -228,11 +243,11 @@ function main(): void {
       'dependency_provider', 'data_processing_terms', 'data_residency',
       'mcp_server_added', 'index_content_source',
     ],
-    valid_from: '2026-06-18T00:00:00.000Z',
-    expires_at: '2026-09-30T23:59:59.000Z',
+    valid_from: shiftExampleDate(EXAMPLE_PERMIT_DATES.validFrom, SHIFT).toISOString(),
+    expires_at: shiftExampleDate(EXAMPLE_PERMIT_DATES.expiresAt, SHIFT).toISOString(),
     accountable_owner: EXAMPLE_AGENT.owner,
     approved_by: EXAMPLE_AGENT.owner,
-    approved_at: '2026-06-18T11:05:00.000Z',
+    approved_at: shiftExampleDate(EXAMPLE_PERMIT_DATES.issuedAt, SHIFT).toISOString(),
     attestation: { cryptographically_signed: false },
   });
 

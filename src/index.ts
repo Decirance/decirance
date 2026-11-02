@@ -13,6 +13,7 @@ export * from './invalidation';
 export * from './permit-state-machine';
 export * from './recommendation';
 export * from './example-case';
+export * from './example-timeline';
 export * from './inspect-adapter';
 export * from './passport-io';
 export * from './attestation';
