@@ -76,6 +76,14 @@ decirance — open assurance for AI agents
       Inventory an agent project and draft an Agent Passport.
       Reads only files a repository normally contains; never reads a .env.
 
+  skill <SKILL.md> --owner <who> --environment <where> --version <v>
+        [--out <passport.json>] [--json]
+      Read a skill or agent definition as an Agent Passport: its model, tools,
+      the permissions they carry, its instructions and its oversight setting.
+      Refuses without an owner and an environment, because a skill file is a
+      reusable artefact and carries neither. Then diff says what a change to
+      it breaks, rather than only that the file changed.
+
   diff <before.json> <after.json> [--graph <graph.json>] [--json]
       Given two Agent Passports, report what materially changed, which claims
       and evidence that invalidates, what must be re-run, and the resulting
@@ -258,6 +266,16 @@ switch (command) {
       process.exitCode = 'runAssess' in mod
         ? mod.runAssess(rest)
         : 'runPermit' in mod ? mod.runPermit(rest) : mod.runApply(rest);
+    } catch (e) {
+      console.error((e as Error).message);
+      process.exitCode = 1;
+    }
+    break;
+  }
+  case 'skill': {
+    const { runSkill } = await import('./skill.ts');
+    try {
+      process.exitCode = runSkill(rest);
     } catch (e) {
       console.error((e as Error).message);
       process.exitCode = 1;

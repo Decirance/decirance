@@ -14,6 +14,7 @@ export * from './permit-state-machine';
 export * from './recommendation';
 export * from './example-case';
 export * from './example-timeline';
+export * from './skill-io';
 export * from './inspect-adapter';
 export * from './passport-io';
 export * from './attestation';

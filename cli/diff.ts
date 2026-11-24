@@ -47,6 +47,28 @@ function readJson(path: string): unknown {
   if (!existsSync(full)) {
     throw new Error(`No such file: ${full}`);
   }
+
+  /*
+   * A skill definition is a reasonable thing to point this command at, and
+   * until now the answer was "No number after minus sign in JSON at position
+   * 1" — the `---` of the frontmatter, read as arithmetic. Technically a
+   * refusal, and useless.
+   *
+   * It stays a refusal rather than translating quietly: a Passport needs an
+   * owner and an environment, a skill file contains neither, and a delta
+   * computed against invented ones would carry the invention into every
+   * conclusion. So it names the step that asks.
+   */
+  if (/\.(md|markdown)$/i.test(full)) {
+    throw new Error(
+      `${full} is a Markdown file, and a delta needs an Agent Passport.\n`
+      + 'If it is a skill definition, translate it first — the translation needs an\n'
+      + 'owner and an environment, which a skill file does not carry:\n\n'
+      + '  decirance skill <file.md> --owner "Name, Role" --environment "where" \\\n'
+      + '    --version 1.0.0 --out passport.json\n',
+    );
+  }
+
   try {
     return JSON.parse(readFileSync(full, 'utf8'));
   } catch (e) {

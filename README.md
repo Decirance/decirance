@@ -47,6 +47,44 @@ npm run assess -- mycase          # the recommendation does not improve
 npm test                          # engine properties, schemas, and the above
 ```
 
+## A skill definition is a configuration too
+
+A `SKILL.md` declares a model, a tool list, the permissions those tools carry
+and the instructions the agent follows. That is most of an Agent Passport, so
+the same delta runs over it:
+
+```bash
+npx decirance skill ./release-check/SKILL.md \
+  --owner "Ari Rios, Director of Customer Operations" \
+  --environment "developer workstation, CI runner" \
+  --version 1.0.0 --out before.json
+
+npx decirance skill ./release-check/SKILL.md --version 2.0.0 \
+  --owner "Ari Rios, Director of Customer Operations" \
+  --environment "developer workstation, CI runner" --out after.json
+
+npx decirance diff before.json after.json --graph your-graph.json
+```
+
+Add `Bash(git push:*)`, `WebFetch` and an MCP tool to a skill and the delta
+reports eight material changes — `permission_granted`, `tool_added`,
+`mcp_server_added`, `network_egress`, `permitted_destination`, `system_prompt`,
+`model_version` — then names the claims that stop being supported, the tests to
+re-run for each, and the work the change created that no claim covers. A text
+diff can tell you a line changed. This tells you what it cost.
+
+Two things it will not do. It refuses without an owner, an environment and a
+version, because a skill is a reusable artefact deployed by different people
+into different places and the file carries none of those — a Passport with a
+fabricated owner is a decision nobody took. And it reads only flat
+`key: value` frontmatter, refusing nested maps, block scalars and `- `
+sequences rather than guessing: a mis-read permission list would produce a
+confident delta computed from authority nobody granted.
+
+Without `--graph` the delta runs against the bundled reference case, which is a
+demonstration of the mechanism and not an assessment of your skill. The command
+says so every time.
+
 The document the people who decide actually read is generated from the same
 files, never typed:
 

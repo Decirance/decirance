@@ -55,6 +55,11 @@ import {
   selectProvider,
   validateProposal,
   parsePassport,
+  parseSkill,
+  parseToolEntry,
+  mcpServerOf,
+  skillToPassport,
+  KNOWN_SKILL_KEYS,
   serialisePassport,
   deriveClaimState,
   type EvidenceIntegrity,
@@ -1220,6 +1225,190 @@ section('Assistant boundary');
     split.usable.length === 1 && split.awaitingReview.length === 1 && split.rejected.length === 1
       && split.counts.proposed === 1 && split.counts.accepted === 1 && split.counts.rejected === 1,
     'Offered, accepted, edited and rejected counts are the measurement of whether the assistant earns its place.');
+}
+
+section('Skill definitions as Passports');
+/**
+ * A skill file carries configuration and not accountability.
+ *
+ * The point of the translation is that the delta engine can say what a change
+ * to a skill *costs*, which a text diff cannot. The point of these checks is
+ * the other half: that the translation refuses rather than inventing the facts
+ * the file does not hold, and that a frontmatter line it cannot read with
+ * certainty is an error rather than a guess. A confident delta computed from a
+ * mis-read permission list would be the worst output this tool could produce.
+ */
+{
+  const v1 = [
+    '---',
+    'name: release-check',
+    'description: Verify a release candidate before deployment.',
+    'allowed-tools: Read, Grep, Bash(npm test:*)',
+    'model: claude-sonnet-5-5',
+    '---',
+    '',
+    '# Release Check',
+    'Run the tests and record the exact output.',
+  ].join('\n');
+
+  const v2 = [
+    '---',
+    'name: release-check',
+    'description: Verify a release candidate, and deploy it when checks pass.',
+    'allowed-tools: Read, Grep, Bash(npm test:*), Bash(git push:*), WebFetch, mcp__deploy__promote',
+    'model: claude-opus-5',
+    '---',
+    '',
+    '# Release Check',
+    'Run the tests, record the output, then promote the release.',
+  ].join('\n');
+
+  const context = { owner: 'Ari Rios, Director', environment: 'developer workstation', agentVersion: '1.0.0' };
+
+  const a = parseSkill(v1);
+  const b = parseSkill(v2);
+  check('a skill definition parses', a.ok && b.ok,
+    'Without this every check below is vacuous.');
+
+  if (a.ok && b.ok) {
+    check('the tool list is read as tools, not as one string',
+      a.skill.frontmatter['allowed-tools']?.includes('Bash(npm test:*)') === true);
+
+    const entry = parseToolEntry('Bash(git push:*)');
+    check('a parameterised tool splits into a tool and a permission',
+      entry.id === 'Bash' && entry.permissions[0] === 'git push:*',
+      'Read as a name, every permission change would read as a tool addition — conservative, and wrong about why.');
+    const plain = parseToolEntry('  Read  ');
+    check('a plain tool has no permissions and is trimmed',
+      plain.id === 'Read' && plain.permissions.length === 0);
+    check('an mcp tool names its server', mcpServerOf('mcp__deploy__promote') === 'deploy');
+    check('a non-mcp tool names no server', mcpServerOf('Bash') === null);
+
+    const refused = skillToPassport(a.skill, { owner: '', environment: '', agentVersion: '' });
+    check('the translation refuses without an owner, an environment and a version',
+      !refused.ok && refused.missing.length === 3,
+      'A passport with a fabricated owner is a decision nobody took.');
+    check('and it names the owner first, since that is the accountability',
+      !refused.ok && refused.missing[0].startsWith('owner'));
+    check('a blank owner is refused, not accepted as a name',
+      !skillToPassport(a.skill, { ...context, owner: '   ' }).ok);
+
+    const before = skillToPassport(a.skill, context);
+    const after = skillToPassport(b.skill, { ...context, agentVersion: '2.0.0' });
+    check('a complete context translates', before.ok && after.ok);
+
+    if (before.ok && after.ok) {
+      const p1 = parsePassport(before.document);
+      const p2 = parsePassport(after.document);
+      check('the translation produces a document the Passport reader accepts',
+        p1.ok && p2.ok,
+        'A translator whose output its own diff rejects would be worse than no translator.');
+
+      if (p1.ok && p2.ok) {
+        const diff = diffPassports(p1.snapshot, p2.snapshot);
+        const kinds = new Set(diff.changes.map((c) => c.kind));
+
+        check('adding a tool is a material change', kinds.has('tool_added'),
+          `Saw: ${[...kinds].join(', ')}`);
+        check('the permission it carries is a separate material change',
+          kinds.has('permission_granted'),
+          'A tool and the authority it holds are two facts, and a permit lists them separately.');
+        check('adding an MCP server is a material change', kinds.has('mcp_server_added'));
+        check('changing the model is a material change', kinds.has('model_version'));
+        check('editing the instructions is a system_prompt change', kinds.has('system_prompt'),
+          'This is the one a reviewer most needs and a text diff reports as "some lines changed".');
+        check('reaching the network changes the enclosure, not just the tools',
+          kinds.has('network_egress') || kinds.has('permitted_destination'),
+          `Containment is assessed separately from the tool inventory. Saw: ${[...kinds].join(', ')}`);
+
+        // The negative control. If diffPassports reported a change for every
+        // pair it was given, every check above would pass while measuring
+        // nothing at all.
+        const same = diffPassports(p1.snapshot, p1.snapshot);
+        check('an unchanged skill produces no material change (negative control)',
+          same.changes.length === 0,
+          'If this fails the checks above prove only that the differ is noisy.');
+
+        const delta = computeDelta({
+          claims: EXAMPLE_CLAIMS,
+          evidence: EXAMPLE_EVIDENCE.map((e) => ({ ref: e.ref, scopePassportHash: e.scopePassportHash })),
+          edges: EXAMPLE_EDGES,
+          changes: diff.changes,
+          unclassifiedFields: diff.unclassified.map((u) => u.field),
+          obligations: EXAMPLE_OBLIGATIONS,
+          currentPassportHash: EXAMPLE_PASSPORT_HASHES.v3,
+        });
+        check('the delta engine reaches a conclusion about a skill change',
+          delta.outcomes.length > 0 && delta.summary.invalidated > 0,
+          'The whole question is whether the engine can say what a skill change breaks.');
+        check('and names the change that caused each one',
+          delta.outcomes.filter((o) => o.impact === 'invalidated')
+            .every((o) => o.triggeredBy.length > 0),
+          'An invalidation that cannot name its trigger is an assertion, not a derivation.');
+      }
+    }
+
+    const unknown = parseSkill(['---', 'name: x', 'surprise: yes', '---', 'body'].join('\n'));
+    check('an unrecognised frontmatter key is reported, not dropped',
+      unknown.ok && unknown.skill.unknownKeys.includes('surprise'),
+      'A key the translation dropped would be a difference the engine never knew about.');
+    if (unknown.ok) {
+      const carried = skillToPassport(unknown.skill, context);
+      check('and it travels into the document, so the delta sees it',
+        carried.ok && 'skill_surprise' in (carried.document as unknown as Record<string, unknown>));
+      if (carried.ok) {
+        const read = parsePassport(carried.document);
+        check('where the Passport reader reports it as unknown, which forces full reassessment',
+          read.ok && read.unknownFields.some((f) => f.includes('skill_surprise')),
+          `Unknown fields: ${read.ok ? read.unknownFields.join(', ') : 'parse failed'}`);
+      }
+    }
+  }
+
+  // Refusals. Each is a frontmatter shape a guess would get wrong.
+  check('a file with no frontmatter is refused',
+    !parseSkill('# Just a heading\n').ok);
+  check('an unclosed frontmatter block is refused',
+    !parseSkill('---\nname: x\n').ok);
+  check('a YAML sequence is refused rather than flattened',
+    !parseSkill(['---', 'allowed-tools:', '  - Read', '  - Bash', '---', ''].join('\n')).ok,
+    'Guessing here would hand a reviewer a delta computed from the wrong tools.');
+  check('a block scalar is refused',
+    !parseSkill(['---', 'name: x', 'description: |', '  long text', '---', ''].join('\n')).ok);
+  check('a duplicate key is refused rather than last-one-wins',
+    !parseSkill(['---', 'name: a', 'name: b', '---', ''].join('\n')).ok);
+  check('frontmatter with no name is refused',
+    !parseSkill(['---', 'description: x', '---', ''].join('\n')).ok,
+    'A skill with no name cannot be referred to in a permit condition.');
+  check('a quoted value is unquoted',
+    (() => { const r = parseSkill(['---', 'name: "release-check"', '---', ''].join('\n')); return r.ok && r.skill.frontmatter.name === 'release-check'; })());
+  check('a comment line is skipped, not read as a key',
+    (() => { const r = parseSkill(['---', '# a note', 'name: x', '---', ''].join('\n')); return r.ok && !('# a note' in r.skill.frontmatter); })());
+  check('oversight is recorded from disable-model-invocation',
+    (() => {
+      const r = parseSkill(['---', 'name: x', 'disable-model-invocation: true', '---', ''].join('\n'));
+      if (!r.ok) return false;
+      const t = skillToPassport(r.skill, { owner: 'o', environment: 'e', agentVersion: '1' });
+      return t.ok && t.document.operating?.autonomy_level === 'invoked_only_by_a_person';
+    })(),
+    'It is the only oversight signal the format carries, and human_oversight is a suspension trigger.');
+  check('a skill the model may invoke unprompted is recorded as such, not as unspecified',
+    (() => {
+      const r = parseSkill(['---', 'name: x', '---', ''].join('\n'));
+      if (!r.ok) return false;
+      const t = skillToPassport(r.skill, { owner: 'o', environment: 'e', agentVersion: '1' });
+      return t.ok && t.document.operating?.autonomy_level === 'model_may_invoke_without_a_person';
+    })());
+  check('a missing tool list is warned about rather than read as no tools',
+    (() => {
+      const r = parseSkill(['---', 'name: x', '---', ''].join('\n'));
+      if (!r.ok) return false;
+      const t = skillToPassport(r.skill, { owner: 'o', environment: 'e', agentVersion: '1' });
+      return t.ok && t.warnings.some((w) => w.includes('inherits every tool'));
+    })(),
+    'On most runtimes an absent list means every tool, which is the opposite of an empty one.');
+  check('the known frontmatter vocabulary is published',
+    KNOWN_SKILL_KEYS.length >= 4 && (KNOWN_SKILL_KEYS as readonly string[]).includes('allowed-tools'));
 }
 
 section('Passport file format');

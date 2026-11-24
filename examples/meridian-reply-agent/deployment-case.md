@@ -10,7 +10,7 @@
 
 This is set by one rule — **R2b.critical_claim_challenged_mitigated**: A critical claim is contradicted by evidence. Operation depends on the accepted compensating controls remaining in force. (C-04)
 
-A permit exists for this exact configuration: **DP-2026-014**, conditional (active), signed by Ari Rios on 2026-08-17.
+A permit exists for this exact configuration: **DP-2026-014**, conditional (active), signed by Ari Rios on 2026-09-08.
 
 ## 2. What the agent is
 
