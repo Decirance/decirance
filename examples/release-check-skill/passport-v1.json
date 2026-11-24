@@ -1,0 +1,47 @@
+{
+  "schema_version": "0.1.0",
+  "agent_id": "release-check",
+  "agent_version": "1.0.0",
+  "owner": "Ari Rios, Release Engineering Lead",
+  "purpose": "Verify a release candidate before deployment.",
+  "environment": "developer workstations and the shared CI runner",
+  "created_at": "2026-09-03T00:00:00.000Z",
+  "components": {
+    "model": {
+      "provider": "anthropic",
+      "model": "claude-sonnet-5-5",
+      "version": "claude-sonnet-5-5"
+    },
+    "prompt_digest": "sha256:d7fb345ae0c359e99af2cbff3c490dd558f89fc2929edb32a87bb63055ebd0c8",
+    "tools": [
+      {
+        "id": "Read",
+        "permissions": []
+      },
+      {
+        "id": "Grep",
+        "permissions": []
+      },
+      {
+        "id": "Glob",
+        "permissions": []
+      },
+      {
+        "id": "Bash",
+        "permissions": [
+          "npm test:*"
+        ]
+      }
+    ]
+  },
+  "operating": {
+    "autonomy_level": "invoked_only_by_a_person",
+    "human_review": {
+      "invocation": "a person invokes the skill"
+    },
+    "permissions": [
+      "npm test:*"
+    ]
+  },
+  "digest": "sha256:79d9cbdaa36b462f3f5fe2c78540769fd1f42ae8c1adc3bbe11c5b20cb47bd11"
+}

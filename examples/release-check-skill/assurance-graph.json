@@ -1,0 +1,412 @@
+{
+  "schema_version": "0.1.0",
+  "case_id": "case_release_check_skill_v1",
+  "claims": [
+    {
+      "ref": "SK-01",
+      "statement": "The skill can invoke no tool outside the allow-list that was reviewed.",
+      "domain": "cyber",
+      "critical": true,
+      "coversTests": [
+        "tool-allowlist-review",
+        "skill-tool-inventory-check"
+      ],
+      "evidence": {
+        "supports": [
+          "SE-01"
+        ],
+        "challenges": []
+      }
+    },
+    {
+      "ref": "SK-02",
+      "statement": "The skill cannot write to a source repository or a deployment target.",
+      "domain": "cyber",
+      "critical": true,
+      "coversTests": [
+        "write-attempt-refusal-test",
+        "least-privilege-review"
+      ],
+      "evidence": {
+        "supports": [
+          "SE-02"
+        ],
+        "challenges": []
+      }
+    },
+    {
+      "ref": "SK-03",
+      "statement": "The skill cannot reach the network, so no retrieved content can enter its context.",
+      "domain": "cyber",
+      "critical": true,
+      "coversTests": [
+        "egress-containment-test"
+      ],
+      "evidence": {
+        "supports": [
+          "SE-03"
+        ],
+        "challenges": []
+      }
+    },
+    {
+      "ref": "SK-04",
+      "statement": "Every tool description the model reads as instruction comes from a reviewed, signed source.",
+      "domain": "cyber",
+      "critical": false,
+      "coversTests": [
+        "mcp-manifest-signature-check",
+        "tool-description-poisoning-pack"
+      ],
+      "evidence": {
+        "supports": [
+          "SE-04"
+        ],
+        "challenges": []
+      }
+    },
+    {
+      "ref": "SK-05",
+      "statement": "The skill runs only when a person invokes it.",
+      "domain": "both",
+      "critical": true,
+      "coversTests": [
+        "invocation-trigger-review",
+        "unprompted-invocation-scan"
+      ],
+      "evidence": {
+        "supports": [
+          "SE-05"
+        ],
+        "challenges": []
+      }
+    },
+    {
+      "ref": "SK-06",
+      "statement": "The instructions the skill supplies to the model are the instructions that were reviewed.",
+      "domain": "cyber",
+      "critical": true,
+      "coversTests": [
+        "prompt-digest-attestation"
+      ],
+      "evidence": {
+        "supports": [
+          "SE-06"
+        ],
+        "challenges": []
+      }
+    },
+    {
+      "ref": "SK-07",
+      "statement": "The behaviour observed in testing is the behaviour the configured model produces.",
+      "domain": "both",
+      "critical": false,
+      "coversTests": [
+        "behaviour-regression-pack"
+      ],
+      "evidence": {
+        "supports": [
+          "SE-07"
+        ],
+        "challenges": []
+      }
+    },
+    {
+      "ref": "SK-08",
+      "statement": "No command the skill runs can alter the record of what the tests reported.",
+      "domain": "cyber",
+      "critical": true,
+      "coversTests": [
+        "record-integrity-test",
+        "log-plane-attestation"
+      ],
+      "evidence": {
+        "supports": [
+          "SE-08"
+        ],
+        "challenges": []
+      }
+    },
+    {
+      "ref": "SK-09",
+      "statement": "A failing check stops the release rather than being reported as a pass.",
+      "domain": "resilience",
+      "critical": false,
+      "coversTests": [
+        "failing-check-escalation-pack"
+      ],
+      "evidence": {
+        "supports": [
+          "SE-06",
+          "SE-07"
+        ],
+        "challenges": [
+          "SE-12"
+        ]
+      }
+    },
+    {
+      "ref": "SK-10",
+      "statement": "Credentials reachable in the skill’s shell cannot authorise action beyond the repository under test.",
+      "domain": "cyber",
+      "critical": true,
+      "coversTests": [
+        "credential-scope-review",
+        "token-lifetime-check"
+      ],
+      "evidence": {
+        "supports": [
+          "SE-09"
+        ],
+        "challenges": []
+      }
+    },
+    {
+      "ref": "SK-11",
+      "statement": "Anything the skill changes can be reversed by a person without the skill’s help.",
+      "domain": "resilience",
+      "critical": false,
+      "coversTests": [
+        "rollback-recovery-test",
+        "shutdown-drill"
+      ],
+      "evidence": {
+        "supports": [
+          "SE-10"
+        ],
+        "challenges": []
+      }
+    },
+    {
+      "ref": "SK-12",
+      "statement": "The skill’s effects are confined to the environment it was approved for.",
+      "domain": "both",
+      "critical": true,
+      "coversTests": [
+        "environment-confinement-review"
+      ],
+      "evidence": {
+        "supports": [
+          "SE-11"
+        ],
+        "challenges": []
+      }
+    }
+  ],
+  "edges": [
+    {
+      "kind": "supports",
+      "sourceRef": "SE-01",
+      "targetRef": "SK-01",
+      "severedBy": [
+        "tool_added",
+        "tool_removed",
+        "mcp_server_added"
+      ]
+    },
+    {
+      "kind": "supports",
+      "sourceRef": "SE-02",
+      "targetRef": "SK-02",
+      "severedBy": [
+        "permission_granted",
+        "tool_added"
+      ]
+    },
+    {
+      "kind": "supports",
+      "sourceRef": "SE-03",
+      "targetRef": "SK-03",
+      "severedBy": [
+        "network_egress",
+        "permitted_destination",
+        "tool_added"
+      ]
+    },
+    {
+      "kind": "supports",
+      "sourceRef": "SE-04",
+      "targetRef": "SK-04",
+      "severedBy": [
+        "mcp_server_added",
+        "mcp_server_changed"
+      ]
+    },
+    {
+      "kind": "supports",
+      "sourceRef": "SE-05",
+      "targetRef": "SK-05",
+      "severedBy": [
+        "autonomy_level",
+        "human_oversight"
+      ]
+    },
+    {
+      "kind": "supports",
+      "sourceRef": "SE-06",
+      "targetRef": "SK-06",
+      "severedBy": [
+        "system_prompt"
+      ]
+    },
+    {
+      "kind": "supports",
+      "sourceRef": "SE-06",
+      "targetRef": "SK-09",
+      "severedBy": [
+        "system_prompt"
+      ]
+    },
+    {
+      "kind": "supports",
+      "sourceRef": "SE-07",
+      "targetRef": "SK-07",
+      "severedBy": [
+        "model_version",
+        "model_provider",
+        "model_artifact_digest"
+      ]
+    },
+    {
+      "kind": "supports",
+      "sourceRef": "SE-07",
+      "targetRef": "SK-09",
+      "severedBy": [
+        "model_version",
+        "system_prompt",
+        "scorer_config"
+      ]
+    },
+    {
+      "kind": "supports",
+      "sourceRef": "SE-08",
+      "targetRef": "SK-08",
+      "severedBy": [
+        "permission_granted",
+        "logging_destination",
+        "shared_storage"
+      ]
+    },
+    {
+      "kind": "supports",
+      "sourceRef": "SE-09",
+      "targetRef": "SK-10",
+      "severedBy": [
+        "credential_scope",
+        "permission_granted"
+      ]
+    },
+    {
+      "kind": "supports",
+      "sourceRef": "SE-10",
+      "targetRef": "SK-11",
+      "severedBy": [
+        "permission_granted",
+        "tool_added",
+        "shutdown_mechanism"
+      ]
+    },
+    {
+      "kind": "supports",
+      "sourceRef": "SE-11",
+      "targetRef": "SK-12",
+      "severedBy": [
+        "deployment_environment",
+        "permitted_destination",
+        "tool_added"
+      ]
+    },
+    {
+      "kind": "challenges",
+      "sourceRef": "SE-12",
+      "targetRef": "SK-09",
+      "severedBy": [
+        "system_prompt",
+        "model_version"
+      ]
+    }
+  ],
+  "obligations": {
+    "tool_added": [
+      "tool-allowlist-review",
+      "skill-tool-inventory-check",
+      "consequential-action-approval-test"
+    ],
+    "tool_removed": [
+      "skill-tool-inventory-check"
+    ],
+    "tool_schema_changed": [
+      "tool-allowlist-review"
+    ],
+    "permission_granted": [
+      "least-privilege-review",
+      "write-attempt-refusal-test",
+      "rollback-recovery-test",
+      "record-integrity-test",
+      "write-integrity-test",
+      "partial-write-recovery-test"
+    ],
+    "permission_revoked": [
+      "least-privilege-review"
+    ],
+    "mcp_server_added": [
+      "mcp-manifest-signature-check",
+      "tool-description-poisoning-pack",
+      "tool-allowlist-review"
+    ],
+    "mcp_server_changed": [
+      "mcp-manifest-signature-check",
+      "tool-description-poisoning-pack"
+    ],
+    "network_egress": [
+      "egress-containment-test"
+    ],
+    "permitted_destination": [
+      "egress-containment-test",
+      "environment-confinement-review"
+    ],
+    "system_prompt": [
+      "prompt-digest-attestation",
+      "failing-check-escalation-pack"
+    ],
+    "model_version": [
+      "behaviour-regression-pack",
+      "failing-check-escalation-pack"
+    ],
+    "model_provider": [
+      "behaviour-regression-pack"
+    ],
+    "autonomy_level": [
+      "invocation-trigger-review",
+      "unprompted-invocation-scan"
+    ],
+    "human_oversight": [
+      "invocation-trigger-review"
+    ],
+    "credential_scope": [
+      "credential-scope-review",
+      "token-lifetime-check"
+    ],
+    "shutdown_mechanism": [
+      "shutdown-drill",
+      "rollback-recovery-test"
+    ],
+    "logging_destination": [
+      "log-plane-attestation",
+      "record-integrity-test"
+    ],
+    "shared_storage": [
+      "record-integrity-test"
+    ],
+    "deployment_environment": [
+      "environment-confinement-review"
+    ],
+    "scorer_config": [
+      "failing-check-escalation-pack"
+    ],
+    "safety_classifier": [
+      "failing-check-escalation-pack"
+    ]
+  },
+  "mcp_servers": []
+}

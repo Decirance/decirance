@@ -33,6 +33,7 @@
         "E-140"
       ],
       "challengingEvidenceRefs": [],
+      "severedChallengeRefs": [],
       "requiredTests": []
     },
     {
@@ -52,6 +53,7 @@
       ],
       "preservedEvidenceRefs": [],
       "challengingEvidenceRefs": [],
+      "severedChallengeRefs": [],
       "requiredTests": [
         "credential-scope-review",
         "token-lifetime-check"
@@ -70,6 +72,7 @@
         "E-146"
       ],
       "challengingEvidenceRefs": [],
+      "severedChallengeRefs": [],
       "requiredTests": []
     },
     {
@@ -85,6 +88,7 @@
         "E-149"
       ],
       "challengingEvidenceRefs": [],
+      "severedChallengeRefs": [],
       "requiredTests": []
     },
     {
@@ -100,6 +104,7 @@
         "E-152"
       ],
       "challengingEvidenceRefs": [],
+      "severedChallengeRefs": [],
       "requiredTests": []
     },
     {
@@ -119,6 +124,7 @@
       ],
       "preservedEvidenceRefs": [],
       "challengingEvidenceRefs": [],
+      "severedChallengeRefs": [],
       "requiredTests": [
         "human-approval-workflow-test"
       ]
@@ -140,6 +146,7 @@
       ],
       "preservedEvidenceRefs": [],
       "challengingEvidenceRefs": [],
+      "severedChallengeRefs": [],
       "requiredTests": [
         "least-privilege-review"
       ]
@@ -158,6 +165,7 @@
         "E-081"
       ],
       "challengingEvidenceRefs": [],
+      "severedChallengeRefs": [],
       "requiredTests": []
     },
     {
@@ -175,6 +183,7 @@
       "challengingEvidenceRefs": [
         "E-112"
       ],
+      "severedChallengeRefs": [],
       "requiredTests": [
         "injection-challenge-pack"
       ]
@@ -196,6 +205,7 @@
         "E-069"
       ],
       "challengingEvidenceRefs": [],
+      "severedChallengeRefs": [],
       "requiredTests": [
         "audit-trail-sample"
       ]
@@ -214,6 +224,7 @@
         "E-104"
       ],
       "challengingEvidenceRefs": [],
+      "severedChallengeRefs": [],
       "requiredTests": []
     },
     {
@@ -229,6 +240,7 @@
         "E-075"
       ],
       "challengingEvidenceRefs": [],
+      "severedChallengeRefs": [],
       "requiredTests": []
     },
     {
@@ -244,6 +256,7 @@
         "E-055"
       ],
       "challengingEvidenceRefs": [],
+      "severedChallengeRefs": [],
       "requiredTests": []
     },
     {
@@ -260,6 +273,7 @@
         "E-081"
       ],
       "challengingEvidenceRefs": [],
+      "severedChallengeRefs": [],
       "requiredTests": []
     },
     {
@@ -275,6 +289,7 @@
         "E-121"
       ],
       "challengingEvidenceRefs": [],
+      "severedChallengeRefs": [],
       "requiredTests": []
     },
     {
@@ -290,6 +305,7 @@
         "E-124"
       ],
       "challengingEvidenceRefs": [],
+      "severedChallengeRefs": [],
       "requiredTests": []
     },
     {
@@ -305,6 +321,7 @@
         "E-127"
       ],
       "challengingEvidenceRefs": [],
+      "severedChallengeRefs": [],
       "requiredTests": []
     },
     {
@@ -320,6 +337,7 @@
         "E-130"
       ],
       "challengingEvidenceRefs": [],
+      "severedChallengeRefs": [],
       "requiredTests": []
     },
     {
@@ -335,6 +353,7 @@
         "E-049"
       ],
       "challengingEvidenceRefs": [],
+      "severedChallengeRefs": [],
       "requiredTests": []
     }
   ],

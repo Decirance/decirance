@@ -13,6 +13,7 @@ export * from './invalidation';
 export * from './permit-state-machine';
 export * from './recommendation';
 export * from './example-case';
+export * from './example-skill-case';
 export * from './example-timeline';
 export * from './skill-io';
 export * from './inspect-adapter';

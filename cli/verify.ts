@@ -55,6 +55,13 @@ import {
   selectProvider,
   validateProposal,
   parsePassport,
+  SKILL_CLAIMS,
+  SKILL_EDGES,
+  SKILL_EVIDENCE,
+  SKILL_OBLIGATIONS,
+  SKILL_PASSPORT_HASHES,
+  SKILL_PASSPORT_V1,
+  SKILL_PASSPORT_V2,
   parseSkill,
   parseToolEntry,
   mcpServerOf,
@@ -1409,6 +1416,204 @@ section('Skill definitions as Passports');
     'On most runtimes an absent list means every tool, which is the opposite of an empty one.');
   check('the known frontmatter vocabulary is published',
     KNOWN_SKILL_KEYS.length >= 4 && (KNOWN_SKILL_KEYS as readonly string[]).includes('allowed-tools'));
+}
+
+section('A case whose claims are about a skill');
+/**
+ * The other half of the skill work.
+ *
+ * `skill-io` proved a `SKILL.md` can be read as a Passport, but the only graph
+ * to run it against was the council casework case, so the demonstration
+ * printed claims about customer records against a release-checking skill. The
+ * arithmetic was real and every claim name was the wrong case.
+ *
+ * These checks are about the case, not the translation: that its receipts bind
+ * to the configuration they name, that a change to the skill reaches the
+ * claims a reader would expect it to reach, and \u2014 the one that matters most \u2014
+ * that the claim the change did not touch is still reported as preserved. A
+ * delta that invalidates everything is not an answer, it is a refusal wearing
+ * an answer's formatting.
+ */
+{
+  const v1 = parsePassport(SKILL_PASSPORT_V1);
+  const v2 = parsePassport(SKILL_PASSPORT_V2);
+  check('the published skill passports are readable', v1.ok && v2.ok,
+    'Everything below is vacuous otherwise.');
+
+  check('every evidence receipt names the configuration it was collected against',
+    SKILL_EVIDENCE.every((e) => e.scopePassportHash === SKILL_PASSPORT_HASHES.v1),
+    'A digest typed into a fixture is one that silently stops matching. These are derived.');
+  check('and the two skill versions are not the same configuration',
+    SKILL_PASSPORT_HASHES.v1 !== SKILL_PASSPORT_HASHES.v2);
+  check('the case covers twelve claims with distinct refs',
+    SKILL_CLAIMS.length === 12
+      && new Set(SKILL_CLAIMS.map((c) => c.ref)).size === SKILL_CLAIMS.length);
+  check('every edge names evidence and a claim that exist',
+    SKILL_EDGES.every((e) =>
+      SKILL_EVIDENCE.some((n) => n.ref === e.sourceRef)
+      && SKILL_CLAIMS.some((c) => c.ref === e.targetRef)),
+    'An edge to a ref that does not exist is a dependency nobody is checking.');
+  check('the case publishes a contradiction, not only passes',
+    SKILL_EDGES.some((e) => e.kind === 'challenges'),
+    'A case made only of supporting artefacts teaches that assurance is collecting passes.');
+
+  if (v1.ok && v2.ok) {
+    const diff = diffPassports(v1.snapshot, v2.snapshot);
+    const run = (changes: typeof diff.changes) => computeDelta({
+      claims: SKILL_CLAIMS,
+      evidence: SKILL_EVIDENCE,
+      edges: SKILL_EDGES,
+      changes,
+      obligations: SKILL_OBLIGATIONS,
+      currentPassportHash: SKILL_PASSPORT_HASHES.v1,
+    });
+
+    // The baseline. Before any change the case stands, except for the one
+    // claim a dry run contradicted \u2014 which is the state a real case is in far
+    // more often than the textbooks suggest.
+    const baseline = run([]);
+    check('with nothing changed, nothing is invalidated (negative control)',
+      baseline.summary.invalidated === 0,
+      'If this fails, every invalidation below proves only that the engine is noisy.');
+    check('and the contradicted claim reads as challenged, not as supported',
+      baseline.outcomes.find((o) => o.claimRef === 'SK-09')?.impact === 'challenged',
+      'One credible contradictory result is not outweighed by a volume of support.');
+
+    const delta = run(diff.changes);
+    const by = (ref: string) => delta.outcomes.find((o) => o.claimRef === ref);
+
+    check('the claim the change did not touch is still preserved',
+      by('SK-05')?.impact === 'preserved',
+      'The skill is still invoked only by a person, and a delta that invalidated this too would be worthless.');
+    check('losing the read-only guarantee invalidates the write claim',
+      by('SK-02')?.impact === 'invalidated'
+        && by('SK-02')?.triggeredBy.includes('permission_granted') === true);
+    check('gaining a network tool invalidates the containment claim',
+      by('SK-03')?.impact === 'invalidated'
+        && by('SK-03')?.triggeredBy.includes('network_egress') === true,
+      'An egress capture of a skill with no network tool says nothing about the same skill holding one.');
+    check('an unsigned MCP server invalidates the tool-description claim',
+      by('SK-04')?.impact === 'invalidated'
+        && by('SK-04')?.triggeredBy.includes('mcp_server_added') === true);
+    check('a write permission invalidates the record-integrity claim',
+      by('SK-08')?.impact === 'invalidated',
+      'The test relied on the skill holding no credential for the store the results go to.');
+    check('seven critical claims lose their support',
+      delta.outcomes.filter((o) => o.critical && o.impact === 'invalidated').length === 7,
+      `Saw ${delta.outcomes.filter((o) => o.critical && o.impact === 'invalidated').length}.`);
+    check('one artefact can be invalidated for two claims at once',
+      (by('SK-09')?.invalidatedEvidenceRefs.length ?? 0) >= 2,
+      'SE-06 attests to a body that carries both the reviewed instructions and the stop-on-failure rule.');
+    check('every invalidation names the test to re-run',
+      delta.outcomes.filter((o) => o.impact === 'invalidated')
+        .every((o) => o.requiredTests.length > 0),
+      'An invalidation with no named test is a worry, not a plan.');
+
+    const newTests = delta.newObligations.map((o) => o.testId);
+    check('the delta names work no existing claim covers',
+      newTests.includes('write-integrity-test')
+        && newTests.includes('consequential-action-approval-test'),
+      `This is the output nobody produces by hand. Saw: ${newTests.join(', ') || '(none)'}`);
+    check('and does not list work an existing claim already watches',
+      !newTests.includes('rollback-recovery-test'),
+      'SK-11 covers it, so it is invalidated work, not new work. Reporting it as new would double-count.');
+    check('a new obligation names every change that obliges it, not the first one seen',
+      delta.newObligations
+        .find((o) => o.testId === 'consequential-action-approval-test')
+        ?.reason?.includes('mcp__deploy__promote') === true,
+      'It was the promote call that raised the question of who authorised the release, '
+      + 'and a reviewer sent to the wrong tool would test the wrong thing and report a pass.');
+
+    const states = delta.outcomes.map((o) => ({
+      ref: o.claimRef,
+      critical: o.critical,
+      state: deriveClaimState({
+        supportingEvidence: o.preservedEvidenceRefs.length,
+        challengingEvidence: o.challengingEvidenceRefs.length,
+        invalidatedEvidence: o.invalidatedEvidenceRefs.length,
+      }),
+    }));
+    const rec = recommend({ claims: states, delta });
+    check('the existing permit is recommended for suspension',
+      rec.suspendExistingPermit === true,
+      'Seven critical claims have lost their support; the permit rests on them.');
+    check('and the ceiling is the unsupported-critical rule, not an approval',
+      rec.bindingRule?.rule === 'R3.critical_claim_unsupported'
+        && rec.recommendation !== 'approve',
+      `Saw ${rec.recommendation} under ${rec.bindingRule?.rule}.`);
+  }
+}
+
+section('A contradiction cannot be severed quietly');
+/**
+ * The defect this case found in the engine.
+ *
+ * A `challenges` edge severed by the change dropped out of
+ * `challengingEvidenceRefs` \u2014 correct, since a run of the old configuration is
+ * not a result about the new one \u2014 and was then reported nowhere at all. So a
+ * change that severed only the contradiction took a claim from `challenged` to
+ * `preserved`, and the delta printed not one word about having set aside a
+ * credible contradictory result.
+ *
+ * Section 10.2 forbids a volume of weak support outweighing one credible
+ * contradiction. Nothing forbade making the contradiction vanish by changing
+ * the configuration it was collected against, because nobody had thought of
+ * it. The probe below is the smallest graph that shows it: one claim, one
+ * surviving support, one contradiction severed by a change the support does
+ * not depend on.
+ */
+{
+  const claims = [{
+    ref: 'P-01',
+    statement: 'The probe claim.',
+    domain: 'cyber' as const,
+    critical: true,
+    coversTests: ['probe-test'],
+  }];
+  const evidence = [
+    { ref: 'PE-support', scopePassportHash: 'sha256:probe' },
+    { ref: 'PE-against', scopePassportHash: 'sha256:probe' },
+  ];
+  const edges = [
+    // Severed by a change the probe never makes, so the support survives.
+    { kind: 'supports' as const, sourceRef: 'PE-support', targetRef: 'P-01', severedBy: ['sandbox_image' as const] },
+    { kind: 'challenges' as const, sourceRef: 'PE-against', targetRef: 'P-01', severedBy: ['model_version' as const] },
+  ];
+  const probe = (kinds: Array<'model_version' | 'sandbox_image'>) => computeDelta({
+    claims,
+    evidence,
+    edges,
+    changes: kinds.map((kind) => ({
+      kind,
+      field: kind,
+      from: 'a',
+      to: 'b',
+      domain: 'both' as const,
+      description: `probe ${kind}`,
+    })) as never,
+    currentPassportHash: 'sha256:probe',
+  });
+
+  const before = probe([]);
+  check('unchanged, the probe claim is challenged (negative control)',
+    before.outcomes[0].impact === 'challenged'
+      && before.outcomes[0].challengingEvidenceRefs.length === 1,
+    'Without this the check below would pass on a graph where nothing contradicts anything.');
+
+  const after = probe(['model_version']);
+  check('severing only the contradiction does not report the claim as preserved',
+    after.outcomes[0].impact !== 'preserved',
+    'This is the laundering path: change the configuration, and the objection disappears.');
+  check('the set-aside contradiction is named in the outcome',
+    after.outcomes[0].severedChallengeRefs.includes('PE-against'),
+    'A contradiction does not go away when the configuration moves. It goes out of date.');
+  check('the surviving support is not reported as invalidated',
+    after.outcomes[0].preservedEvidenceRefs.includes('PE-support')
+      && after.outcomes[0].invalidatedEvidenceRefs.length === 0,
+    'Nothing supporting the claim moved, and saying otherwise would overstate the finding.');
+  check('and the claim lands in the reassessment plan',
+    reassessmentPlan(after).some((o) => o.claimRef === 'P-01'),
+    'The test has to be re-run, which is what the plan is for.');
 }
 
 section('Passport file format');

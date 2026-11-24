@@ -34,12 +34,25 @@ import {
   type ClaimNode,
   type EvidenceNode,
   type GraphEdge,
+  type ObligationMap,
 } from '../src/index.ts';
 
 interface GraphInput {
   claims: ClaimNode[];
   evidence: EvidenceNode[];
   edges: GraphEdge[];
+  /**
+   * Tests each change kind obliges, for THIS case.
+   *
+   * Passing `--graph` used to change the claims and the edges and leave the
+   * obligation map as the reference council case's, so a release-checking
+   * skill was told to run a proxy reachability scan and a human-approval
+   * workflow test — work from somebody else's agent. The obligations are a
+   * judgement about a particular system, exactly as `severedBy` is, and the
+   * one thing a tool must never do is answer about a case other than the one
+   * it was given.
+   */
+  obligations?: ObligationMap;
 }
 
 function readJson(path: string): unknown {
@@ -88,7 +101,12 @@ function readJson(path: string): unknown {
 function loadGraph(path?: string): { graph: GraphInput; source: string } {
   if (!path) {
     return {
-      graph: { claims: EXAMPLE_CLAIMS, evidence: EXAMPLE_EVIDENCE, edges: EXAMPLE_EDGES },
+      graph: {
+        claims: EXAMPLE_CLAIMS,
+        evidence: EXAMPLE_EVIDENCE,
+        edges: EXAMPLE_EDGES,
+        obligations: EXAMPLE_OBLIGATIONS,
+      },
       source: 'bundled reference case (Meridian Reply Agent)',
     };
   }
@@ -134,8 +152,26 @@ function loadGraph(path?: string): { graph: GraphInput; source: string } {
     manifestNote = ' + evidence-manifest.json';
   }
 
+  /*
+   * A case with no obligation map is not an error, and it is not nothing
+   * either. It means the delta can say what the change invalidated and cannot
+   * say what work the change created, so it says that rather than borrowing
+   * another case's answer or printing an empty section as if it had looked.
+   */
+  if (!raw.obligations) {
+    console.log(`\nNote: ${resolve(path)} declares no "obligations" map.`);
+    console.log('  The delta will report what this change invalidated, but cannot report');
+    console.log('  work the change created that no claim covers. Add an "obligations"');
+    console.log('  object mapping material change kinds to test identifiers.');
+  }
+
   return {
-    graph: { claims: raw.claims!, evidence, edges: raw.edges! },
+    graph: {
+      claims: raw.claims!,
+      evidence,
+      edges: raw.edges!,
+      obligations: raw.obligations ?? {},
+    },
     source: `${resolve(path)}${manifestNote}`,
   };
 }
@@ -189,7 +225,7 @@ export function runDiff(args: string[]): number {
     edges: graph.edges,
     changes: diff.changes,
     unclassifiedFields: [...diff.unclassified.map((u) => u.field), ...unknown],
-    obligations: EXAMPLE_OBLIGATIONS,
+    obligations: graph.obligations,
     currentPassportHash: beforeHash,
   });
 
@@ -291,6 +327,18 @@ export function runDiff(args: string[]): number {
     if (o.challengingEvidenceRefs.length > 0) {
       console.log(`    contradicted by ${o.challengingEvidenceRefs.join(', ')} (still applicable)`);
     }
+    /*
+     * A contradiction the change put out of scope.
+     *
+     * Printed because the objection did not go away; it went out of date. Left
+     * unprinted, a change that severed only the contradicting evidence moved a
+     * claim from challenged to preserved with nothing on the page to say that
+     * a contradictory result had been set aside.
+     */
+    if (o.severedChallengeRefs.length > 0) {
+      console.log(`    contradiction now out of scope: ${o.severedChallengeRefs.join(', ')}`);
+      console.log('    It was collected against the old configuration. Re-run it; do not drop it.');
+    }
     for (const t of o.requiredTests) console.log(`    re-run        ${t}`);
   }
 
@@ -302,11 +350,25 @@ export function runDiff(args: string[]): number {
     }
   }
 
-  // A full reassessment re-runs every distinct test the case covers. Counting
-  // `requiredTests` here instead would be circular — that field is only
-  // populated for claims the change affected, so "full" would always equal
-  // "targeted" and the saving would always print as zero.
-  const allTests = new Set(graph.claims.flatMap((c) => c.coversTests));
+  /*
+   * A full reassessment re-runs every distinct test the case covers, plus the
+   * work the change created.
+   *
+   * Counting `requiredTests` for "full" instead would be circular — that field
+   * is only populated for claims the change affected, so "full" would always
+   * equal "targeted" and the saving would always print as zero.
+   *
+   * The new obligations belong in both totals. Left out of "full" they still
+   * counted toward "targeted", and the skill case printed `targeted 20 / full
+   * re-run 19` — a subset larger than the set it belongs to. Whichever number
+   * a reader believed, one of them was false, and a cost figure that cannot
+   * be true is worse than no cost figure: it is the one line in this output a
+   * busy approver is most likely to quote.
+   */
+  const allTests = new Set([
+    ...graph.claims.flatMap((c) => c.coversTests),
+    ...delta.newObligations.map((o) => o.testId),
+  ]);
   const targeted = new Set([
     ...affected.flatMap((o) => o.requiredTests),
     ...delta.newObligations.map((o) => o.testId),
@@ -316,6 +378,9 @@ export function runDiff(args: string[]): number {
   console.log('\nReassessment cost');
   console.log(`  targeted     ${targeted.size} test(s)`);
   console.log(`  full re-run  ${allTests.size} test(s) across the whole case`);
+  if (delta.newObligations.length > 0) {
+    console.log(`               (including ${delta.newObligations.length} the change created)`);
+  }
   console.log(`  avoided      ${avoided.length} test(s)`);
   console.log('  Tests avoided is a count over the graph, not an estimate.');
   console.log('  It says nothing about how long a test takes to run.');

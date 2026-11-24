@@ -548,6 +548,84 @@
       "severedBy": []
     }
   ],
+  "obligations": {
+    "network_egress": [
+      "egress-containment-test",
+      "proxy-reachability-scan"
+    ],
+    "package_registry": [
+      "supply-chain-provenance-check",
+      "proxy-reachability-scan"
+    ],
+    "shared_storage": [
+      "shared-state-review",
+      "cross-instance-leakage-test"
+    ],
+    "inter_agent_channel": [
+      "inter-agent-channel-scan"
+    ],
+    "safety_classifier": [
+      "refusal-regression-pack"
+    ],
+    "logging_destination": [
+      "log-plane-attestation",
+      "evidence-integrity-review"
+    ],
+    "monitoring_plane": [
+      "monitoring-independence-review"
+    ],
+    "evaluation_harness": [
+      "harness-isolation-review"
+    ],
+    "scorer_config": [
+      "scorer-independence-check"
+    ],
+    "shutdown_mechanism": [
+      "shutdown-drill",
+      "credential-revocation-drill"
+    ],
+    "credential_scope": [
+      "credential-scope-review",
+      "token-lifetime-check"
+    ],
+    "permission_granted": [
+      "human-approval-workflow-test",
+      "write-integrity-test",
+      "rollback-recovery-test"
+    ],
+    "third_party_dependency": [
+      "dependency-failover-test",
+      "degraded-mode-test"
+    ],
+    "recovery_objective": [
+      "recovery-objective-test",
+      "restore-rehearsal"
+    ],
+    "data_processing_terms": [
+      "data-processing-terms-review",
+      "dpia-refresh"
+    ],
+    "index_content_source": [
+      "retrieval-allowlist-review",
+      "source-provenance-check",
+      "rag-poisoning-pack",
+      "canary-document-check",
+      "index-rebuild-rehearsal"
+    ],
+    "mcp_server_added": [
+      "mcp-manifest-signature-check",
+      "tool-description-poisoning-pack",
+      "tool-allowlist-review"
+    ],
+    "data_source_added": [
+      "retrieval-scope-test",
+      "content-scanning-check"
+    ],
+    "data_residency": [
+      "residency-attestation",
+      "transfer-risk-assessment"
+    ]
+  },
   "mcp_servers": [
     {
       "name": "case-store",

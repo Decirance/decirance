@@ -101,6 +101,23 @@ export interface ClaimOutcome {
    * support must not outweigh one credible contradictory result.
    */
   challengingEvidenceRefs: string[];
+  /**
+   * Contradictory evidence the change put out of scope.
+   *
+   * Reported because the alternative is a laundering path. A `challenges` edge
+   * severed by the change drops out of `challengingEvidenceRefs`, which is
+   * correct — a dry run of the old configuration is not a result about the new
+   * one. But it was reported nowhere, so a change that severed only the
+   * contradiction took a claim from `challenged` to `preserved` and the delta
+   * said nothing about having set aside a credible contradictory result. That
+   * is the precise failure section 10.2 forbids, arriving by subtraction
+   * instead of by averaging.
+   *
+   * A contradiction does not disappear when the configuration moves. It goes
+   * out of date, which obliges re-running it before the claim may be called
+   * preserved again.
+   */
+  severedChallengeRefs: string[];
   requiredTests: string[];
 }
 
@@ -180,6 +197,7 @@ export function computeDelta(input: DeltaInput): DeltaResult {
         invalidatedEvidenceRefs: [],
         preservedEvidenceRefs: [],
         challengingEvidenceRefs: [],
+        severedChallengeRefs: [],
         requiredTests: c.coversTests,
       })),
       newObligations: [],
@@ -269,6 +287,14 @@ export function computeDelta(input: DeltaInput): DeltaResult {
       .map((e) => e.sourceRef)
       .filter((ref) => evidenceByRef.has(ref));
 
+    const challengeEdges = edges.filter(
+      (e) => e.kind === 'challenges' && e.targetRef === claim.ref,
+    );
+    const severedChallenges = challengeEdges.filter((e) => severedSet.has(e));
+    const severedChallengeRefs = severedChallenges
+      .map((e) => e.sourceRef)
+      .filter((ref) => evidenceByRef.has(ref));
+
     const direct = directly.get(claim.ref);
     const indirect = derived.get(claim.ref);
 
@@ -289,6 +315,24 @@ export function computeDelta(input: DeltaInput): DeltaResult {
       // supporting evidence also survived (specification section 10.2). A
       // challenged claim cannot be quietly carried through a delta.
       impact = 'challenged';
+    } else if (severedChallengeRefs.length > 0) {
+      /*
+       * The claim's support survived and its contradiction did not.
+       *
+       * `preserved` would be a false statement here: it means no modelled
+       * dependency was severed, and one was — the edge carrying the objection.
+       * `invalidated` would be false in the other direction, since nothing
+       * supporting the claim moved. `affected` is the finding it is: the claim
+       * stands on its evidence, and a result that contradicted it has to be
+       * re-run before anyone may call the matter closed.
+       */
+      impact = 'affected';
+      triggeredBy = [
+        ...new Set(
+          severedChallenges.flatMap((e) => e.severedBy.filter((k) => changeKinds.has(k))),
+        ),
+      ];
+      path = severedChallenges.map((e) => `${e.sourceRef} -[challenges]-> ${e.targetRef}`);
     }
 
     return {
@@ -302,6 +346,7 @@ export function computeDelta(input: DeltaInput): DeltaResult {
       invalidatedEvidenceRefs,
       preservedEvidenceRefs,
       challengingEvidenceRefs,
+      severedChallengeRefs,
       requiredTests: impact === 'preserved' ? [] : claim.coversTests,
     };
   });
@@ -314,10 +359,25 @@ export function computeDelta(input: DeltaInput): DeltaResult {
     for (const testId of obligations[change.kind] ?? []) {
       if (covered.has(testId)) continue;
       if (newObligations.some((o) => o.testId === testId)) continue;
+      /*
+       * Every change that obliges this test, not the first one seen.
+       *
+       * Deduplicating by test identifier is right — a test is run once — but
+       * keeping only the first change's description with it misattributed the
+       * obligation. Adding `WebFetch` and `mcp__deploy__promote` in one step
+       * printed "consequential-action-approval-test — Tool WebFetch added",
+       * which reads as a claim about the wrong tool: it was the promote call
+       * that raised the question of who authorised the release. Someone sent
+       * to test the wrong thing by a line like that would test the wrong
+       * thing and report back that it passed.
+       */
+      const obliging = bearingChanges.filter(
+        (c) => (obligations[c.kind] ?? []).includes(testId),
+      );
       newObligations.push({
         testId,
         triggeredBy: change.kind,
-        reason: `${change.description} No existing claim covers "${testId}".`,
+        reason: `${obliging.map((c) => c.description).join(' ')} No existing claim covers "${testId}".`,
       });
     }
   }

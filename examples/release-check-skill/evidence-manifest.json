@@ -1,0 +1,222 @@
+{
+  "schema_version": "0.1.0",
+  "case_id": "case_release_check_skill_v1",
+  "evidence": [
+    {
+      "ref": "SE-01",
+      "title": "Skill tool inventory, release-check v1.0.0",
+      "detail": "Allow-list parsed from frontmatter and compared with the approved list",
+      "source_kind": "config_snapshot",
+      "domain": "cyber",
+      "state": "verified",
+      "scope_passport_digest": "sha256:79d9cbdaa36b462f3f5fe2c78540769fd1f42ae8c1adc3bbe11c5b20cb47bd11",
+      "collected_at": "2026-11-09T09:40:00.000Z",
+      "collected_by": "Release Engineering",
+      "quality": {
+        "provenance": 95,
+        "coverage": 90,
+        "construct_validity": 85,
+        "ecological_validity": 80,
+        "repeatability": 95
+      }
+    },
+    {
+      "ref": "SE-02",
+      "title": "Write-attempt refusal run, 40 prompts",
+      "detail": "Prompts instructing the skill to commit, push, tag or deploy; all refused",
+      "source_kind": "control_test",
+      "domain": "cyber",
+      "state": "verified",
+      "scope_passport_digest": "sha256:79d9cbdaa36b462f3f5fe2c78540769fd1f42ae8c1adc3bbe11c5b20cb47bd11",
+      "collected_at": "2026-11-10T14:10:00.000Z",
+      "collected_by": "Release Engineering",
+      "quality": {
+        "provenance": 95,
+        "coverage": 45,
+        "construct_validity": 80,
+        "ecological_validity": 75,
+        "repeatability": 90
+      }
+    },
+    {
+      "ref": "SE-03",
+      "title": "Egress capture across 20 skill runs",
+      "detail": "No outbound connection observed from the skill process",
+      "source_kind": "runtime_log",
+      "domain": "cyber",
+      "state": "verified",
+      "scope_passport_digest": "sha256:79d9cbdaa36b462f3f5fe2c78540769fd1f42ae8c1adc3bbe11c5b20cb47bd11",
+      "collected_at": "2026-11-11T11:00:00.000Z",
+      "collected_by": "Platform Security",
+      "quality": {
+        "provenance": 90,
+        "coverage": 70,
+        "construct_validity": 85,
+        "ecological_validity": 85,
+        "repeatability": 80
+      }
+    },
+    {
+      "ref": "SE-04",
+      "title": "MCP server registry extract",
+      "detail": "No MCP server is declared, so no unsigned tool description reaches the model",
+      "source_kind": "config_snapshot",
+      "domain": "cyber",
+      "state": "verified",
+      "scope_passport_digest": "sha256:79d9cbdaa36b462f3f5fe2c78540769fd1f42ae8c1adc3bbe11c5b20cb47bd11",
+      "collected_at": "2026-11-09T09:45:00.000Z",
+      "collected_by": "Release Engineering",
+      "quality": {
+        "provenance": 95,
+        "coverage": 95,
+        "construct_validity": 70,
+        "ecological_validity": 65,
+        "repeatability": 95
+      }
+    },
+    {
+      "ref": "SE-05",
+      "title": "Invocation trigger review",
+      "detail": "disable-model-invocation is set, so the model cannot start the skill unprompted",
+      "source_kind": "attestation",
+      "domain": "both",
+      "state": "verified",
+      "scope_passport_digest": "sha256:79d9cbdaa36b462f3f5fe2c78540769fd1f42ae8c1adc3bbe11c5b20cb47bd11",
+      "collected_at": "2026-11-12T10:20:00.000Z",
+      "collected_by": "Ari Rios, Release Engineering Lead",
+      "quality": {
+        "provenance": 85,
+        "coverage": 80,
+        "construct_validity": 75,
+        "ecological_validity": 70,
+        "repeatability": 90
+      }
+    },
+    {
+      "ref": "SE-06",
+      "title": "Instruction digest attestation",
+      "detail": "Digest of the reviewed skill body, countersigned at review",
+      "source_kind": "contract_attestation",
+      "domain": "cyber",
+      "state": "verified",
+      "scope_passport_digest": "sha256:79d9cbdaa36b462f3f5fe2c78540769fd1f42ae8c1adc3bbe11c5b20cb47bd11",
+      "collected_at": "2026-11-12T10:25:00.000Z",
+      "collected_by": "Ari Rios, Release Engineering Lead",
+      "quality": {
+        "provenance": 100,
+        "coverage": 60,
+        "construct_validity": 80,
+        "ecological_validity": 60,
+        "repeatability": 100
+      }
+    },
+    {
+      "ref": "SE-07",
+      "title": "Behaviour regression pack on claude-sonnet-5-5",
+      "detail": "120 release-check transcripts scored against the expected report shape",
+      "source_kind": "inspect_eval",
+      "domain": "both",
+      "state": "verified",
+      "scope_passport_digest": "sha256:79d9cbdaa36b462f3f5fe2c78540769fd1f42ae8c1adc3bbe11c5b20cb47bd11",
+      "collected_at": "2026-11-15T16:30:00.000Z",
+      "collected_by": "AI Platform",
+      "quality": {
+        "provenance": 90,
+        "coverage": 75,
+        "construct_validity": 70,
+        "ecological_validity": 65,
+        "repeatability": 60
+      }
+    },
+    {
+      "ref": "SE-08",
+      "title": "CI record integrity test",
+      "detail": "Test output is written by the runner to a store the skill holds no credential for",
+      "source_kind": "control_test",
+      "domain": "cyber",
+      "state": "verified",
+      "scope_passport_digest": "sha256:79d9cbdaa36b462f3f5fe2c78540769fd1f42ae8c1adc3bbe11c5b20cb47bd11",
+      "collected_at": "2026-11-16T09:15:00.000Z",
+      "collected_by": "Platform Security",
+      "quality": {
+        "provenance": 95,
+        "coverage": 80,
+        "construct_validity": 90,
+        "ecological_validity": 85,
+        "repeatability": 90
+      }
+    },
+    {
+      "ref": "SE-09",
+      "title": "Shell credential scope review",
+      "detail": "Tokens present in the skill’s shell are read-scoped to the repository under test",
+      "source_kind": "attestation",
+      "domain": "cyber",
+      "state": "verified",
+      "scope_passport_digest": "sha256:79d9cbdaa36b462f3f5fe2c78540769fd1f42ae8c1adc3bbe11c5b20cb47bd11",
+      "collected_at": "2026-11-16T13:50:00.000Z",
+      "collected_by": "Platform Security",
+      "quality": {
+        "provenance": 90,
+        "coverage": 70,
+        "construct_validity": 85,
+        "ecological_validity": 75,
+        "repeatability": 85
+      }
+    },
+    {
+      "ref": "SE-10",
+      "title": "Reversibility review",
+      "detail": "The skill makes no durable change, so there is nothing to roll back",
+      "source_kind": "attestation",
+      "domain": "resilience",
+      "state": "verified",
+      "scope_passport_digest": "sha256:79d9cbdaa36b462f3f5fe2c78540769fd1f42ae8c1adc3bbe11c5b20cb47bd11",
+      "collected_at": "2026-11-17T11:05:00.000Z",
+      "collected_by": "Release Engineering",
+      "quality": {
+        "provenance": 85,
+        "coverage": 90,
+        "construct_validity": 80,
+        "ecological_validity": 70,
+        "repeatability": 90
+      }
+    },
+    {
+      "ref": "SE-11",
+      "title": "Environment confinement review",
+      "detail": "Skill runs on developer workstations and the CI runner only; no production credential is present",
+      "source_kind": "attestation",
+      "domain": "both",
+      "state": "verified",
+      "scope_passport_digest": "sha256:79d9cbdaa36b462f3f5fe2c78540769fd1f42ae8c1adc3bbe11c5b20cb47bd11",
+      "collected_at": "2026-11-17T11:20:00.000Z",
+      "collected_by": "Ari Rios, Release Engineering Lead",
+      "quality": {
+        "provenance": 85,
+        "coverage": 75,
+        "construct_validity": 80,
+        "ecological_validity": 80,
+        "repeatability": 85
+      }
+    },
+    {
+      "ref": "SE-12",
+      "title": "Dry-run log: failing check summarised as passing",
+      "detail": "In 1 of 12 runs the skill reported \"tests mostly passing\" with two suites failing; the instruction to stop on failure did not hold",
+      "source_kind": "runtime_log",
+      "domain": "resilience",
+      "state": "verified",
+      "scope_passport_digest": "sha256:79d9cbdaa36b462f3f5fe2c78540769fd1f42ae8c1adc3bbe11c5b20cb47bd11",
+      "collected_at": "2026-11-18T15:40:00.000Z",
+      "collected_by": "Release Engineering",
+      "quality": {
+        "provenance": 90,
+        "coverage": 55,
+        "construct_validity": 85,
+        "ecological_validity": 90,
+        "repeatability": 50
+      }
+    }
+  ]
+}

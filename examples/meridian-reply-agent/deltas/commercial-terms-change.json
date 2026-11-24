@@ -34,6 +34,7 @@
         "E-140"
       ],
       "challengingEvidenceRefs": [],
+      "severedChallengeRefs": [],
       "requiredTests": []
     },
     {
@@ -49,6 +50,7 @@
         "E-143"
       ],
       "challengingEvidenceRefs": [],
+      "severedChallengeRefs": [],
       "requiredTests": []
     },
     {
@@ -64,6 +66,7 @@
         "E-146"
       ],
       "challengingEvidenceRefs": [],
+      "severedChallengeRefs": [],
       "requiredTests": []
     },
     {
@@ -79,6 +82,7 @@
         "E-149"
       ],
       "challengingEvidenceRefs": [],
+      "severedChallengeRefs": [],
       "requiredTests": []
     },
     {
@@ -94,6 +98,7 @@
         "E-152"
       ],
       "challengingEvidenceRefs": [],
+      "severedChallengeRefs": [],
       "requiredTests": []
     },
     {
@@ -109,6 +114,7 @@
         "E-093"
       ],
       "challengingEvidenceRefs": [],
+      "severedChallengeRefs": [],
       "requiredTests": []
     },
     {
@@ -124,6 +130,7 @@
         "E-061"
       ],
       "challengingEvidenceRefs": [],
+      "severedChallengeRefs": [],
       "requiredTests": []
     },
     {
@@ -140,6 +147,7 @@
         "E-081"
       ],
       "challengingEvidenceRefs": [],
+      "severedChallengeRefs": [],
       "requiredTests": []
     },
     {
@@ -157,6 +165,7 @@
       "challengingEvidenceRefs": [
         "E-112"
       ],
+      "severedChallengeRefs": [],
       "requiredTests": [
         "injection-challenge-pack"
       ]
@@ -174,6 +183,7 @@
         "E-069"
       ],
       "challengingEvidenceRefs": [],
+      "severedChallengeRefs": [],
       "requiredTests": []
     },
     {
@@ -190,6 +200,7 @@
         "E-104"
       ],
       "challengingEvidenceRefs": [],
+      "severedChallengeRefs": [],
       "requiredTests": []
     },
     {
@@ -205,6 +216,7 @@
         "E-075"
       ],
       "challengingEvidenceRefs": [],
+      "severedChallengeRefs": [],
       "requiredTests": []
     },
     {
@@ -220,6 +232,7 @@
         "E-055"
       ],
       "challengingEvidenceRefs": [],
+      "severedChallengeRefs": [],
       "requiredTests": []
     },
     {
@@ -242,6 +255,7 @@
       ],
       "preservedEvidenceRefs": [],
       "challengingEvidenceRefs": [],
+      "severedChallengeRefs": [],
       "requiredTests": [
         "data-processing-terms-review",
         "residency-attestation"
@@ -260,6 +274,7 @@
         "E-121"
       ],
       "challengingEvidenceRefs": [],
+      "severedChallengeRefs": [],
       "requiredTests": []
     },
     {
@@ -275,6 +290,7 @@
         "E-124"
       ],
       "challengingEvidenceRefs": [],
+      "severedChallengeRefs": [],
       "requiredTests": []
     },
     {
@@ -290,6 +306,7 @@
         "E-127"
       ],
       "challengingEvidenceRefs": [],
+      "severedChallengeRefs": [],
       "requiredTests": []
     },
     {
@@ -305,6 +322,7 @@
         "E-130"
       ],
       "challengingEvidenceRefs": [],
+      "severedChallengeRefs": [],
       "requiredTests": []
     },
     {
@@ -320,6 +338,7 @@
         "E-049"
       ],
       "challengingEvidenceRefs": [],
+      "severedChallengeRefs": [],
       "requiredTests": []
     }
   ],

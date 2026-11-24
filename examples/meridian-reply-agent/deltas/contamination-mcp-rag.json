@@ -55,6 +55,7 @@
         "E-140"
       ],
       "challengingEvidenceRefs": [],
+      "severedChallengeRefs": [],
       "requiredTests": []
     },
     {
@@ -70,6 +71,7 @@
         "E-143"
       ],
       "challengingEvidenceRefs": [],
+      "severedChallengeRefs": [],
       "requiredTests": []
     },
     {
@@ -85,6 +87,7 @@
         "E-146"
       ],
       "challengingEvidenceRefs": [],
+      "severedChallengeRefs": [],
       "requiredTests": []
     },
     {
@@ -100,6 +103,7 @@
         "E-149"
       ],
       "challengingEvidenceRefs": [],
+      "severedChallengeRefs": [],
       "requiredTests": []
     },
     {
@@ -115,6 +119,7 @@
         "E-152"
       ],
       "challengingEvidenceRefs": [],
+      "severedChallengeRefs": [],
       "requiredTests": []
     },
     {
@@ -130,6 +135,7 @@
         "E-093"
       ],
       "challengingEvidenceRefs": [],
+      "severedChallengeRefs": [],
       "requiredTests": []
     },
     {
@@ -145,6 +151,7 @@
         "E-061"
       ],
       "challengingEvidenceRefs": [],
+      "severedChallengeRefs": [],
       "requiredTests": []
     },
     {
@@ -166,6 +173,7 @@
       ],
       "preservedEvidenceRefs": [],
       "challengingEvidenceRefs": [],
+      "severedChallengeRefs": [],
       "requiredTests": [
         "retrieval-scope-test"
       ]
@@ -185,6 +193,7 @@
       "challengingEvidenceRefs": [
         "E-112"
       ],
+      "severedChallengeRefs": [],
       "requiredTests": [
         "injection-challenge-pack"
       ]
@@ -202,6 +211,7 @@
         "E-069"
       ],
       "challengingEvidenceRefs": [],
+      "severedChallengeRefs": [],
       "requiredTests": []
     },
     {
@@ -218,6 +228,7 @@
         "E-104"
       ],
       "challengingEvidenceRefs": [],
+      "severedChallengeRefs": [],
       "requiredTests": []
     },
     {
@@ -233,6 +244,7 @@
         "E-075"
       ],
       "challengingEvidenceRefs": [],
+      "severedChallengeRefs": [],
       "requiredTests": []
     },
     {
@@ -248,6 +260,7 @@
         "E-055"
       ],
       "challengingEvidenceRefs": [],
+      "severedChallengeRefs": [],
       "requiredTests": []
     },
     {
@@ -264,6 +277,7 @@
         "E-081"
       ],
       "challengingEvidenceRefs": [],
+      "severedChallengeRefs": [],
       "requiredTests": []
     },
     {
@@ -284,6 +298,7 @@
       ],
       "preservedEvidenceRefs": [],
       "challengingEvidenceRefs": [],
+      "severedChallengeRefs": [],
       "requiredTests": [
         "retrieval-allowlist-review",
         "source-provenance-check"
@@ -307,6 +322,7 @@
       ],
       "preservedEvidenceRefs": [],
       "challengingEvidenceRefs": [],
+      "severedChallengeRefs": [],
       "requiredTests": [
         "rag-poisoning-pack",
         "indirect-injection-pack"
@@ -325,6 +341,7 @@
         "E-127"
       ],
       "challengingEvidenceRefs": [],
+      "severedChallengeRefs": [],
       "requiredTests": []
     },
     {
@@ -344,6 +361,7 @@
       ],
       "preservedEvidenceRefs": [],
       "challengingEvidenceRefs": [],
+      "severedChallengeRefs": [],
       "requiredTests": [
         "mcp-manifest-signature-check",
         "tool-description-poisoning-pack"
@@ -362,6 +380,7 @@
         "E-049"
       ],
       "challengingEvidenceRefs": [],
+      "severedChallengeRefs": [],
       "requiredTests": []
     }
   ],

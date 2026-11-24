@@ -55,23 +55,35 @@ the same delta runs over it:
 
 ```bash
 npx decirance skill ./release-check/SKILL.md \
-  --owner "Ari Rios, Director of Customer Operations" \
-  --environment "developer workstation, CI runner" \
+  --owner "Ari Rios, Release Engineering Lead" \
+  --environment "developer workstations and the shared CI runner" \
   --version 1.0.0 --out before.json
 
 npx decirance skill ./release-check/SKILL.md --version 2.0.0 \
-  --owner "Ari Rios, Director of Customer Operations" \
-  --environment "developer workstation, CI runner" --out after.json
+  --owner "Ari Rios, Release Engineering Lead" \
+  --environment "developer workstations and the shared CI runner" \
+  --out after.json
 
 npx decirance diff before.json after.json --graph your-graph.json
 ```
 
-Add `Bash(git push:*)`, `WebFetch` and an MCP tool to a skill and the delta
-reports eight material changes — `permission_granted`, `tool_added`,
+[`examples/release-check-skill`](examples/release-check-skill/) is a worked case
+you can run without authoring anything: two versions of a release-checking
+skill, and twelve claims about what that skill was relied upon to guarantee.
+
+Add `Bash(git push:*)`, `WebFetch` and an MCP tool to it and the delta reports
+eight material changes — `permission_granted`, `tool_added`,
 `mcp_server_added`, `network_egress`, `permitted_destination`, `system_prompt`,
-`model_version` — then names the claims that stop being supported, the tests to
-re-run for each, and the work the change created that no claim covers. A text
-diff can tell you a line changed. This tells you what it cost.
+`model_version` — and then the part that matters: seven of the twelve claims
+are critical and lose their support, because a read-only verifier and a
+deployment actor are different systems. The write-attempt refusal run tested a
+skill that held no write permission. The egress capture observed a skill that
+held no network tool. The delta names the tests to re-run for each, and three
+pieces of work no claim in the case covers, because no claim about a skill that
+cannot write would ever have asked whether a half-finished write leaves the
+repository consistent.
+
+A text diff can tell you a line changed. This tells you what it cost.
 
 Two things it will not do. It refuses without an owner, an environment and a
 version, because a skill is a reusable artefact deployed by different people

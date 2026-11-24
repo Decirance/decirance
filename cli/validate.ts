@@ -97,6 +97,12 @@ const CASES: Array<{ schema: string; file: string }> = [
   { schema: 'agent-passport.schema.json', file: 'examples/meridian-reply-agent/agent-passport.json' },
   { schema: 'context-contract.schema.json', file: 'examples/meridian-reply-agent/context-contract.json' },
   { schema: 'evidence-manifest.schema.json', file: 'examples/meridian-reply-agent/evidence-manifest.json' },
+  // The skill case's manifest is hand-authored in the engine rather than
+  // transcribed from a tool's output, which is exactly the kind of file a
+  // schema catches a typo in.
+  { schema: 'evidence-manifest.schema.json', file: 'examples/release-check-skill/evidence-manifest.json' },
+  { schema: 'agent-passport.schema.json', file: 'examples/release-check-skill/passport-v1.json' },
+  { schema: 'agent-passport.schema.json', file: 'examples/release-check-skill/passport-v2.json' },
   { schema: 'deployment-permit.schema.json', file: 'examples/meridian-reply-agent/deployment-permit.json' },
 ];
 
